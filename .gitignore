@@ -1,0 +1,9 @@
+# Foldery zależności i tymczasowe (CRITICAL)
+node_modules
+/dist
+/build
+npm-debug.log
+
+# Pliki środowiskowe (Security)
+.env
+.DS_Store

@@ -1,0 +1,15 @@
+{
+  "name": "corelay-api-core",
+  "version": "1.0.0",
+  "description": "Corelay API for MVP - Handles transaction logic and database.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "otp-generator": "^4.0.1",
+    "moment": "^2.30.1"
+  }
+}
