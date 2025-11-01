@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODIVO Scanner (Corelay PoC)</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f0f0; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; }
+        .header { background-color: #34495e; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 1.4em; margin-bottom: 20px; }
+        .container { width: 90%; max-width: 600px; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .message-box { padding: 20px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+        .message-box.success { background-color: #2ecc71; color: white; }
+        .message-box.error { background-color: #e74c3c; color: white; }
+        .message-box.info { background-color: #f1c40f; color: #000; }
+        .btn { background-color: #3498db; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
+        #qr-reader { width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div class="header">MODIVO Terminal (Corelay PoC)</div>
+
+    <div class="container">
+        <div id="message" class="message-box info">
+            Gotowy do skanowania kodu Klienta. Proszę o Twój kod QR.
+        </div>
+        
+        <div id="qr-reader" style="width: 100%; max-width: 300px; margin: 0 auto;"></div>
+
+        <input type="text" id="guest-pin-input" placeholder="Wprowadź Kod Gościnny (PIN)" style="width: 98%; padding: 10px; margin-top: 20px; border: 1px solid #ccc; border-radius: 5px;">
+        <button class="btn" onclick="verifyPin()">Weryfikuj PIN</button>
+
+    </div>
+
+    <script>
+        // KLUCZOWY ADRES: MUSISZ WSTAWIĆ SWÓJ PUBLICZNY URL API Z RENDER!
+        const API_BASE_URL = 'https://corelay-mvp.onrender.com/api'; 
+        // KLUCZOWY ID SKANERA: W tym miejscu apka identyfikuje się jako terminal Modivo
+        const SCANNER_ID = 'MODIVO';
+
+        const messageElement = document.getElementById('message');
+        const pinInput = document.getElementById('guest-pin-input');
+        let html5QrCode;
+
+        function updateMessage(text, type = 'info') {
+            messageElement.className = `message-box ${type}`;
+            messageElement.innerHTML = text;
+        }
+        
+        // ------------------------------------------
+        // A. FUNKCJE SKANERA QR (GŁÓWNY PROCES)
+        // ------------------------------------------
+        function onScanSuccess(decodedText, decodedResult) {
+            updateMessage('Skanowanie zakończone. Weryfikacja...', 'info');
+            html5QrCode.stop().then(() => {
+                processScannedCode(decodedText);
+            }).catch(err => {
+                updateMessage('Błąd zatrzymania kamery.', 'error');
+            });
+        }
+
+        function processScannedCode(decodedText) {
+            // Zakładamy, że kod QR zawiera UserID|Timestamp
+            const parts = decodedText.split('|');
+            if (parts.length !== 2) {
+                updateMessage('Niepoprawny format kodu QR Corelay.', 'error');
+                return;
+            }
+            
+            const [userId, timestamp] = parts;
+            
+            sendVerificationRequest(userId, timestamp);
+        }
+
+        // FUNKCJA: Weryfikacja PIN (Kod Gościnny)
+        function verifyPin() {
+            const guestPin = pinInput.value.trim();
+            if (guestPin.length !== 6) {
+                updateMessage('PIN musi mieć 6 cyfr.', 'error');
+                return;
+            }
+            sendVerificationRequest(null, null, guestPin);
+        }
+
+        // ------------------------------------------
+        // B. FUNKCJA KOMUNIKACJI Z API (Weryfikacja CORE)
+        // ------------------------------------------
+        async function sendVerificationRequest(userId = null, timestamp = null, guestPin = null) {
+            updateMessage('Łączenie z Corelay API...', 'info');
+
+            const payload = {
+                scannerId: SCANNER_ID
+            };
+            if (userId) payload.userId = userId;
+            if (timestamp) payload.timestamp = timestamp;
+            if (guestPin) payload.guestPin = guestPin;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/verify_transaction`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    let productInfo = data.order.product || 'Nieznany produkt';
+                    
+                    if (data.transactionType === 'PICKUP') {
+                        updateMessage(`SUKCES - ODBIÓR. Wydano: ${productInfo}. Klient: ${data.order.userId}.`, 'success');
+                    } else if (data.transactionType === 'RETURN') {
+                         updateMessage(`SUKCES - ZWROT. Przyjęto: ${productInfo}. Klient: ${data.order.userId}.`, 'success');
+                    } else {
+                         updateMessage(`SUKCES - Transakcja zaakceptowana.`, 'success');
+                    }
+                } else {
+                    updateMessage(`BŁĄD WERYFIKACJI. Wiadomość: ${data.message}`, 'error');
+                }
+
+            } catch (error) {
+                updateMessage(`KRYTYCZNY BŁĄD POŁĄCZENIA! Serwer nie odpowiada.`, 'error');
+                console.error('API Connection Error:', error);
+            }
+            
+            // Po weryfikacji wznawiamy skaner (opóźnienie, by użytkownik przeczytał)
+            setTimeout(startScanner, 4000); 
+        }
+
+        // ------------------------------------------
+        // C. INICJALIZACJA I URUCHOMIENIE
+        // ------------------------------------------
+        function startScanner() {
+            const qrCodeRegionId = "qr-reader";
+            if (!html5QrCode) {
+                 html5QrCode = new Html5Qrcode(qrCodeRegionId);
+            }
+            // Zaczynamy skanowanie (wybieramy pierwszą kamerę)
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: { width: 250, height: 250 } }, 
+                onScanSuccess, 
+                (errorMessage) => { 
+                    // console.log(errorMessage); // Nie pokazujemy błędów skanowania użytkownikowi
+                }
+            ).catch(err => {
+                 updateMessage(`BŁĄD: Nie można uruchomić kamery. Użyj innej przeglądarki lub sprawdź uprawnienia.`, 'error');
+            });
+        }
+
+        startScanner();
+    </script>
+
+</body>
+</html>
