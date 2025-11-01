@@ -10,8 +10,9 @@ const port = process.env.PORT || 8080;
 // To pozwala Twoim aplikacjom na Netlify łączyć się z API na Render
 const allowedOrigins = [
     'http://localhost:8080', 
-    'https://*.netlify.app',
-    'https://*.corelay.tech' // Ustawienie Twojej domeny
+    'https://modivo.netlify.app',
+    'https://corelay.netlify.app',
+    'https://corelay.tech' // Ustawienie Twojej domeny
 ];
 app.use(cors({
     origin: (origin, callback) => {
@@ -94,4 +95,3 @@ app.post('/api/admin/create_test_order', (req, res) => {
 app.listen(port, () => {
     console.log(`Corelay API (Mózg) działa na porcie: ${port}`);
 });
-
