@@ -4,7 +4,7 @@ const cors = require('cors');
 const CorelayLogic = require('./corelay_logic');
 const DB = require('./database'); // Nasza baza danych
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 // Konfiguracja CORS (Kluczowe dla połączenia między aplikacjami)
 // To pozwala Twoim aplikacjom na Netlify łączyć się z API na Render
