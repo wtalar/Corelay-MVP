@@ -26,6 +26,12 @@ app.use(cors({
 
 app.use(express.json());
 
+// Testowy endpoint, aby Render wiedział, że API działa
+app.get('/api', (req, res) => {
+    res.send('Corelay API Base is Active. Waiting for /user/orders endpoint.');
+});
+
+
 // ------------------------------------------
 // 1. ENDPOINT: POBIERANIE DANYCH UŻYTKOWNIKA (Dla Appki Klienta)
 // ------------------------------------------
@@ -88,3 +94,4 @@ app.post('/api/admin/create_test_order', (req, res) => {
 app.listen(port, () => {
     console.log(`Corelay API (Mózg) działa na porcie: ${port}`);
 });
+
