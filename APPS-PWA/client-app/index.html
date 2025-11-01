@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corelay - Panel Klienta</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js"></script>
+    <style>
+        /* Stylizacja dla Profesjonalizmu i Kontrastu */
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #1c1c1c; 
+            color: #ecf0f1; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        .header { 
+            font-size: 1.8em; 
+            font-weight: 900; 
+            margin-bottom: 25px; 
+            color: #2ecc71; /* Akcent kolorystyczny: Corelay Green */
+        }
+        .card { 
+            background-color: #2c3e50; 
+            padding: 20px; 
+            border-radius: 10px; 
+            width: 100%; 
+            max-width: 400px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); 
+            border-left: 5px solid #3498db; 
+        }
+        .code-container { 
+            padding: 10px; 
+            background-color: #fff; 
+            border-radius: 8px; 
+            margin-bottom: 15px; 
+            display: flex;
+            justify-content: center;
+        }
+        .status { 
+            font-weight: bold; 
+            padding: 5px 10px; 
+            border-radius: 5px; 
+            text-align: center; 
+            font-size: 0.9em;
+        }
+        .status.ready { background-color: #3498db; }
+        .status.picked { background-color: #f1c40f; color: #000; }
+        .status.return { background-color: #e74c3c; }
+        .btn { 
+            background-color: #2ecc71; 
+            color: #000; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 10px; 
+            font-weight: bold; 
+            transition: background-color 0.2s; 
+            text-transform: uppercase;
+        }
+        .btn.secondary {
+             background-color: #7f8c8d;
+             color: white;
+             font-size: 0.9em;
+        }
+        .btn:hover { background-color: #27ae60; }
+        .pin-display { 
+            background-color: #f39c12; 
+            color: #000; 
+            padding: 15px; 
+            border-radius: 5px; 
+            text-align: center; 
+            font-size: 1.5em; 
+            font-weight: bold; 
+            margin-top: 15px; 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">CORELAY - Panel Klienta</div>
+    <div id="loading" style="color: #95a5a6;">Ładowanie zamówień i weryfikacja API...</div>
+    
+    <div id="orders-list">
+        </div>
+    
+    <div id="main-code-section" class="card" style="display: none;">
+        <h3>🛡️ Twój Uniwersalny Kod DYNAMICZNY</h3>
+        <p style="font-size: 0.8em; color: #f1c40f;">Kod wygasa co <span id="timer">30</span> sekund. **Zero ryzyka screenshotów!** (Bezpieczeństwo klasy CORE)</p>
+        <div class="code-container">
+            <canvas id="qr-code"></canvas>
+        </div>
+    </div>
+    
+    <div id="guest-pin-section" class="card" style="display: none;">
+        <h3>👤 Kod Gościnny (Delegowanie)</h3>
+        <p style="font-size: 0.8em; color: #9b59b6;">Wyślij ten PIN koledze. Ważny przez 60 minut.</p>
+        <div class="pin-display" id="guest-pin-display"></div>
+    </div>
+
+    <script>
+        // UWAGA: KLUCZOWE! Użyj adresu URL swojego API z Render!
+        const API_BASE_URL = 'https://corelay-mvp.onrender.com/api'; 
+        const USER_ID = 'user_wojtek'; // Stały ID do testu
+        
+        let qrCodeInterval;
+
+        // Funkcja do pobierania zamówień
+        async function fetchOrders() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/user/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: USER_ID })
+                });
+                const data = await response.json();
+
+                if (data.success && data.orders.length > 0) {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('main-code-section').style.display = 'block';
+                    displayOrders(data.orders);
+                    generateDynamicCode();
+                    qrCodeInterval = setInterval(generateDynamicCode, 30000); // Odświeżanie co 30 sekund
+                } else {
+                    document.getElementById('loading').innerText = 'Brak aktywnych zamówień.';
+                }
+            } catch (error) {
+                document.getElementById('loading').innerText = 'Błąd połączenia z API. Serwer Render śpi lub URL jest niepoprawny.';
+                console.error('Błąd połączenia API:', error);
+            }
+        }
+
+        // FUNKCJA: Wyświetlanie zamówień
+        function displayOrders(orders) {
+            const listElement = document.getElementById('orders-list');
+            listElement.innerHTML = '';
+
+            orders.forEach(order => {
+                const orderCard = document.createElement('div');
+                orderCard.className = 'card';
+                
+                let statusClass = 'ready';
+                let actionButton = '';
+                let returnInfo = '';
+
+                if (order.status === 'READY_FOR_PICKUP') {
+                    statusClass = 'ready';
+                    actionButton = `<button class="btn secondary" onclick="alert('Idź do Sklepu/Paczkomatu i zeskanuj kod (Tryb RELAY)')">Zeskanuj, aby odebrać</button>`;
+                } else if (order.status === 'PICKED_UP') {
+                    statusClass = 'picked';
+                    // Informacja o czasie na zwrot (kluczowa dla B2C)
+                    const expiresTime = moment(order.maxTime);
+                    const daysLeft = expiresTime.diff(moment(), 'days');
+                    returnInfo = `<p style="font-size:0.8em; color:#fff;">Dni do zwrotu: ${daysLeft} (do ${expiresTime.format('DD.MM')})</p>`;
+
+                    // Przycisk zwrotu i kod gościnny (logika ZWROTÓW I DELEGOWANIA)
+                    actionButton = `
+                        <button class="btn" onclick="initiateReturnAndDelegation('${order.orderId}')">Zwróć Paczkę</button>
+                        <button class="btn secondary" onclick="generateGuestPin('${order.orderId}')">Generuj Kod Gościnny (PIN)</button>
+                    `;
+                } else if (order.status.startsWith('RETURN')) {
+                    statusClass = 'return';
+                }
+
+                orderCard.innerHTML = `
+                    <p style="font-weight:bold;">Zamówienie: ${order.orderId} - ${order.product}</p>
+                    <p style="font-size:0.8em; color:#bdc3c7;">Odbiór/Zwrot w: ${order.storeId}</p>
+                    ${returnInfo}
+                    <div class="status ${statusClass}">Status: ${order.status.replace('_', ' ')}</div>
+                    ${actionButton}
+                `;
+                listElement.appendChild(orderCard);
+            });
+        }
+
+        // FUNKCJA: Generowanie Dynamicznego Kodu (BLIK)
+        function generateDynamicCode() {
+            const timestamp = moment().valueOf(); // Aktualny czas w milisekundach
+            const codeData = `${USER_ID}|${timestamp}`; 
+            
+            // Kod QR zawiera ID użytkownika ORAZ czas (dla weryfikacji bezpieczeństwa)
+            QRCode.toCanvas(document.getElementById('qr-code'), codeData, { width: 200, color: { dark: '#1c1c1c', light: '#fff' } }, (error) => {
+                if (error) console.error(error);
+            });
+
+            // Aktualizacja timera
+            let seconds = 30;
+            const timerElement = document.getElementById('timer');
+            
+            // Kasujemy stary interwał i ustawiamy nowy (aby uniknąć nakładania się timerów)
+            if (window.qrTimerInterval) clearInterval(window.qrTimerInterval);
+
+            window.qrTimerInterval = setInterval(() => {
+                seconds--;
+                timerElement.innerText = seconds;
+                if (seconds <= 0) {
+                    clearInterval(window.qrTimerInterval);
+                    timerElement.innerText = '0 (Wygasł, odświeżanie...)';
+                }
+            }, 1000);
+        }
+
+        // FUNKCJA: Inicjowanie Zwrotu (Konieczne przed skanem zwrotu)
+        function initiateReturnAndDelegation(orderId) {
+             const action = prompt("Gdzie chcesz zwrócić? Wpisz: SALON (Modivo/LPP) lub PACZKOMAT (InPost)");
+             
+             if (action && action.toUpperCase() === 'PACZKOMAT') {
+                 // W realnym systemie to by tylko ustawiało status w API
+                 alert(`Status zwrotu dla ${orderId} ustawiony na: PACZKOMAT. Teraz zeskanuj kod w Symulatorze Paczkomatu.`);
+             } else if (action && action.toUpperCase() === 'SALON') {
+                 alert(`Status zwrotu dla ${orderId} ustawiony na: SALON. Teraz zeskanuj kod w Symulatorze Sklepu.`);
+             } else {
+                 alert("Anulowano. Wpisz SALON lub PACZKOMAT.");
+             }
+        }
+
+
+        // FUNKCJA: Generowanie Kodu Gościnnego (PIN)
+        async function generateGuestPin(orderId) {
+            document.getElementById('guest-pin-section').style.display = 'block';
+
+            const response = await fetch(`${API_BASE_URL}/user/generate_guest_pin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: USER_ID, orderId: orderId })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                const expiresMoment = moment(data.expiresAt).format('HH:mm:ss');
+                document.getElementById('guest-pin-display').innerHTML = `
+                    PIN: <strong>${data.pin}</strong><br>
+                    Ważny do: ${expiresMoment}
+                `;
+            } else {
+                 document.getElementById('guest-pin-display').innerHTML = `Błąd generowania PINu. ${data.message}`;
+            }
+        }
+
+        fetchOrders();
+    </script>
+
+</body>
+</html>
