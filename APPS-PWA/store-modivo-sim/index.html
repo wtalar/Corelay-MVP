@@ -1,155 +1,486 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MODIVO Scanner (Corelay PoC)</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f0f0f0; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; }
-        .header { background-color: #34495e; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 1.4em; margin-bottom: 20px; }
-        .container { width: 90%; max-width: 600px; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
-        .message-box { padding: 20px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold; }
-        .message-box.success { background-color: #2ecc71; color: white; }
-        .message-box.error { background-color: #e74c3c; color: white; }
-        .message-box.info { background-color: #f1c40f; color: #000; }
-        .btn { background-color: #3498db; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
-        #qr-reader { width: 100%; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Modivo Simulator – Skaner QR dla odbioru/zwrotów w sklepie Modivo. Corelay MVP Demo.">
+  <title>Modivo Kasa – Skaner Corelay</title>
+  
+  <!-- PWA Manifest (dodaj manifest.json dla full PWA) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#dc3545"> <!-- Modivo red -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  
+  <!-- Fonts: Inter (corporate, clean) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Icons: Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- QR Scanner Library: html5-qrcode (lepsze dla mobile/camera) -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  
+  <style>
+    /* Global Styles: Modivo branding (red-white, professional) */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      color: #333;
+      line-height: 1.6;
+      padding: 10px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(220, 53, 69, 0.1); /* Modivo red shadow */
+      overflow: hidden;
+      flex: 1;
+    }
+    header {
+      background: linear-gradient(90deg, #dc3545, #c82333); /* Modivo red */
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    header p {
+      font-size: 0.9em;
+      opacity: 0.95;
+    }
+    main {
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Scanner Section */
+    #scanner-section {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #qr-reader {
+      width: 100%;
+      height: 250px; /* Mobile-friendly */
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    #reader-status {
+      margin-top: 10px;
+      font-size: 0.9em;
+      color: #666;
+    }
+    /* Manual Input Fallback */
+    #manual-section {
+      display: none; /* Show if camera fail */
+      margin-top: 15px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    #manual-pin {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    #manual-pin:focus {
+      border-color: #dc3545;
+      outline: none;
+    }
+    #scan-btn {
+      width: 100%;
+      padding: 12px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #scan-btn:hover {
+      background: #c82333;
+    }
+    #scan-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .control-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9em;
+    }
+    .control-btn.active {
+      background: #dc3545;
+      color: white;
+      border-color: #dc3545;
+    }
+    .control-btn:hover:not(.active) {
+      background: #f8f9fa;
+    }
+    /* Results History */
+    #history-section {
+      margin-top: 20px;
+    }
+    .history-item {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      font-size: 0.9em;
+    }
+    .history-success {
+      border-left: 4px solid #28a745;
+      color: #155724;
+    }
+    .history-error {
+      border-left: 4px solid #dc3545;
+      color: #721c24;
+    }
+    /* Loading & Error Toast */
+    #loading {
+      text-align: center;
+      padding: 20px;
+      display: none;
+    }
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #dc3545;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #error-toast {
+      display: none;
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      background: #dc3545;
+      color: white;
+      border-radius: 8px;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    #success-toast {
+      display: none;
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 12px 20px;
+      background: #28a745;
+      color: white;
+      border-radius: 8px;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    /* Responsive */
+    @media (min-width: 600px) {
+      .container { max-width: 500px; }
+      #qr-reader { height: 300px; }
+    }
+    .hidden { display: none !important; }
+  </style>
 </head>
 <body>
-
-    <div class="header">MODIVO Terminal (Corelay PoC)</div>
-
-    <div class="container">
-        <div id="message" class="message-box info">
-            Gotowy do skanowania kodu Klienta. Proszę o Twój kod QR.
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-store"></i> Modivo Kasa</h1>
+      <p>Skaner Corelay – Odbiór i Zwroty QR</p>
+    </header>
+    
+    <main>
+      <section id="scanner-section">
+        <div class="controls">
+          <button class="control-btn active" id="camera-btn" onclick="toggleCamera()">
+            <i class="fas fa-camera"></i> Kamera
+          </button>
+          <button class="control-btn" id="manual-btn" onclick="toggleManual()">
+            <i class="fas fa-keyboard"></i> Ręczny PIN
+          </button>
         </div>
+        <div id="qr-reader"></div>
+        <p id="reader-status">Naciśnij "Kamera" aby rozpocząć skanowanie</p>
+      </section>
+      
+      <section id="manual-section">
+        <input type="text" id="manual-pin" placeholder="Wpisz 6-cyfrowy PIN" maxlength="6" inputmode="numeric">
+        <button id="scan-btn"><i class="fas fa-scan"></i> Skanuj PIN</button>
+      </section>
+      
+      <section id="history-section">
+        <h3>Ostatnie transakcje</h3>
+        <div id="history-list"></div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- Toasts -->
+  <div id="success-toast">
+    <i class="fas fa-check-circle"></i> <span id="success-message"></span>
+  </div>
+  <div id="error-toast">
+    <i class="fas fa-times-circle"></i> <span id="error-message"></span>
+  </div>
+  
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Przetwarzanie...</p>
+  </div>
+  
+  <script>
+    // ============================================
+    // JAVASCRIPT LOGIKA MODIVO SIMULATOR (Skaner + API)
+    // ============================================
+    
+    // Konfiguracja
+    const API_BASE = 'http://localhost:3000'; // Zmień na Render URL
+    const SCANNER_ID = 'MODIVO'; // Fixed dla tego symulatora
+    let html5QrCode; // Scanner instance
+    let isScanning = false;
+    let history = JSON.parse(localStorage.getItem('modivoHistory')) || [];
+    let currentMode = 'camera'; // 'camera' lub 'manual'
+    
+    // DOM elements
+    const qrReader = document.getElementById('qr-reader');
+    const readerStatus = document.getElementById('reader-status');
+    const manualSection = document.getElementById('manual-section');
+    const manualPin = document.getElementById('manual-pin');
+    const scanBtn = document.getElementById('scan-btn');
+    const cameraBtn = document.getElementById('camera-btn');
+    const manualBtn = document.getElementById('manual-btn');
+    const historyList = document.getElementById('history-list');
+    const loading = document.getElementById('loading');
+    const successToast = document.getElementById('success-toast');
+    const errorToast = document.getElementById('error-toast');
+    const successMessage = document.getElementById('success-message');
+    const errorMessage = document.getElementById('error-message');
+    
+    // Show toast
+    function showToast(toastEl, msgEl, message, isSuccess = true, duration = 4000) {
+      msgEl.textContent = message;
+      toastEl.style.display = 'block';
+      setTimeout(() => toastEl.style.display = 'none', duration);
+    }
+    
+    function showSuccess(msg) {
+      showToast(successToast, successMessage, msg, true);
+    }
+    
+    function showError(msg) {
+      showToast(errorToast, errorMessage, msg, false);
+    }
+    
+    function showLoading(show = true) {
+      loading.style.display = show ? 'block' : 'none';
+      scanBtn.disabled = show;
+    }
+    
+    // Toggle modes
+    function toggleCamera() {
+      currentMode = 'camera';
+      cameraBtn.classList.add('active');
+      manualBtn.classList.remove('active');
+      manualSection.style.display = 'none';
+      readerStatus.textContent = 'Uruchamianie kamery...';
+      startScanner();
+    }
+    
+    function toggleManual() {
+      currentMode = 'manual';
+      cameraBtn.classList.remove('active');
+      manualBtn.classList.add('active');
+      manualSection.style.display = 'block';
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          qrReader.innerHTML = '';
+          readerStatus.textContent = 'Wpisz PIN ręcznie i kliknij Skanuj';
+        }).catch(err => showError('Błąd zatrzymania skanera: ' + err));
+      }
+    }
+    
+    // Start QR scanner
+    function startScanner() {
+      if (isScanning) return;
+      
+      html5QrCode = new Html5Qrcode('qr-reader');
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      
+      html5QrCode.start(
+        { facingMode: 'environment' }, // Back camera
+        config,
+        (decodedText) => {
+          // On scan success: Parse and verify
+          readerStatus.textContent = 'Skanowano! Przetwarzanie...';
+          handleScan(decodedText);
+        },
+        (err) => {
+          // No QR found – quiet
+          if (err) console.log('Scan error (expected):', err);
+        }
+      ).then(() => {
+        isScanning = true;
+        readerStatus.textContent = 'Umieść QR w ramce i poczekaj...';
+      }).catch((err) => {
+        console.error('Camera error:', err);
+        showError('Błąd kamery: ' + (err === 'NotAllowedError' ? 'Pozwól na dostęp do kamery' : err));
+        toggleManual(); // Fallback to manual
+      });
+    }
+    
+    // Handle scan/PIN: Parse and API call
+    async function handleScan(scannedData) {
+      if (!scannedData) return showError('Brak danych ze skanu');
+      
+      showLoading(true);
+      isScanning = false;
+      if (html5QrCode) html5QrCode.stop();
+      qrReader.innerHTML = ''; // Clear video
+      
+      // Parse scannedData (np. 'order:ORD123|user:test@corelay.pl|token:abc' lub raw PIN)
+      let userId, timestamp, guestPin;
+      if (scannedData.includes('|')) {
+        // QR format: Parse split
+        const parts = scannedData.split('|');
+        userId = parts.find(p => p.startsWith('user:'))?.split(':')[1];
+        timestamp = Date.now(); // Current time for dynamic
+        guestPin = scannedData; // Full as guestPin
+      } else if (/^\d{6}$/.test(scannedData)) {
+        // Manual PIN: 6 digits
+        userId = prompt('Wpisz email użytkownika dla PIN:'); // Mock for demo
+        if (!userId) return showError('Potrzebny email');
+        timestamp = Date.now();
+        guestPin = scannedData;
+      } else {
+        return showError('Nieprawidłowy format – expected QR lub 6-cyfrowy PIN');
+      }
+      
+      if (!userId) userId = prompt('Email użytkownika nie znaleziony – wpisz:'); // Fallback prompt
+      if (!userId) return showError('Brak email użytkownika');
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/verify_transaction`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            timestamp: new Date(timestamp).toISOString(), // ISO for API
+            scannerId: SCANNER_ID,
+            guestPin
+          })
+        });
+        const data = await response.json();
         
-        <div id="qr-reader" style="width: 100%; max-width: 300px; margin: 0 auto;"></div>
-
-        <input type="text" id="guest-pin-input" placeholder="Wprowadź Kod Gościnny (PIN)" style="width: 98%; padding: 10px; margin-top: 20px; border: 1px solid #ccc; border-radius: 5px;">
-        <button class="btn" onclick="verifyPin()">Weryfikuj PIN</button>
-
-    </div>
-
-    <script>
-        // KLUCZOWY ADRES: MUSISZ WSTAWIĆ SWÓJ PUBLICZNY URL API Z RENDER!
-        const API_BASE_URL = 'https://corelay-mvp.onrender.com/api'; 
-        // KLUCZOWY ID SKANERA: W tym miejscu apka identyfikuje się jako terminal Modivo
-        const SCANNER_ID = 'MODIVO';
-
-        const messageElement = document.getElementById('message');
-        const pinInput = document.getElementById('guest-pin-input');
-        let html5QrCode;
-
-        function updateMessage(text, type = 'info') {
-            messageElement.className = `message-box ${type}`;
-            messageElement.innerHTML = text;
+        if (!data.success) {
+          addHistory(false, `Błąd: ${data.message || 'Weryfikacja nieudana'}`, userId, guestPin);
+          showError(data.message);
+          readerStatus.textContent = 'Skan nieudany – spróbuj ponownie';
+        } else {
+          addHistory(true, data.message, userId, guestPin);
+          showSuccess(data.message);
+          readerStatus.textContent = `Sukces: ${data.transactionType} o ${new Date().toLocaleTimeString('pl-PL')}`;
         }
-        
-        // ------------------------------------------
-        // A. FUNKCJE SKANERA QR (GŁÓWNY PROCES)
-        // ------------------------------------------
-        function onScanSuccess(decodedText, decodedResult) {
-            updateMessage('Skanowanie zakończone. Weryfikacja...', 'info');
-            html5QrCode.stop().then(() => {
-                processScannedCode(decodedText);
-            }).catch(err => {
-                updateMessage('Błąd zatrzymania kamery.', 'error');
-            });
-        }
-
-        function processScannedCode(decodedText) {
-            // Zakładamy, że kod QR zawiera UserID|Timestamp
-            const parts = decodedText.split('|');
-            if (parts.length !== 2) {
-                updateMessage('Niepoprawny format kodu QR Corelay.', 'error');
-                return;
-            }
-            
-            const [userId, timestamp] = parts;
-            
-            sendVerificationRequest(userId, timestamp);
-        }
-
-        // FUNKCJA: Weryfikacja PIN (Kod Gościnny)
-        function verifyPin() {
-            const guestPin = pinInput.value.trim();
-            if (guestPin.length !== 6) {
-                updateMessage('PIN musi mieć 6 cyfr.', 'error');
-                return;
-            }
-            sendVerificationRequest(null, null, guestPin);
-        }
-
-        // ------------------------------------------
-        // B. FUNKCJA KOMUNIKACJI Z API (Weryfikacja CORE)
-        // ------------------------------------------
-        async function sendVerificationRequest(userId = null, timestamp = null, guestPin = null) {
-            updateMessage('Łączenie z Corelay API...', 'info');
-
-            const payload = {
-                scannerId: SCANNER_ID
-            };
-            if (userId) payload.userId = userId;
-            if (timestamp) payload.timestamp = timestamp;
-            if (guestPin) payload.guestPin = guestPin;
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/verify_transaction`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    let productInfo = data.order.product || 'Nieznany produkt';
-                    
-                    if (data.transactionType === 'PICKUP') {
-                        updateMessage(`SUKCES - ODBIÓR. Wydano: ${productInfo}. Klient: ${data.order.userId}.`, 'success');
-                    } else if (data.transactionType === 'RETURN') {
-                         updateMessage(`SUKCES - ZWROT. Przyjęto: ${productInfo}. Klient: ${data.order.userId}.`, 'success');
-                    } else {
-                         updateMessage(`SUKCES - Transakcja zaakceptowana.`, 'success');
-                    }
-                } else {
-                    updateMessage(`BŁĄD WERYFIKACJI. Wiadomość: ${data.message}`, 'error');
-                }
-
-            } catch (error) {
-                updateMessage(`KRYTYCZNY BŁĄD POŁĄCZENIA! Serwer nie odpowiada.`, 'error');
-                console.error('API Connection Error:', error);
-            }
-            
-            // Po weryfikacji wznawiamy skaner (opóźnienie, by użytkownik przeczytał)
-            setTimeout(startScanner, 4000); 
-        }
-
-        // ------------------------------------------
-        // C. INICJALIZACJA I URUCHOMIENIE
-        // ------------------------------------------
-        function startScanner() {
-            const qrCodeRegionId = "qr-reader";
-            if (!html5QrCode) {
-                 html5QrCode = new Html5Qrcode(qrCodeRegionId);
-            }
-            // Zaczynamy skanowanie (wybieramy pierwszą kamerę)
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                { fps: 10, qrbox: { width: 250, height: 250 } }, 
-                onScanSuccess, 
-                (errorMessage) => { 
-                    // console.log(errorMessage); // Nie pokazujemy błędów skanowania użytkownikowi
-                }
-            ).catch(err => {
-                 updateMessage(`BŁĄD: Nie można uruchomić kamery. Użyj innej przeglądarki lub sprawdź uprawnienia.`, 'error');
-            });
-        }
-
-        startScanner();
-    </script>
-
+      } catch (err) {
+        addHistory(false, `Sieciowy błąd: ${err.message}`, userId || 'N/A', scannedData);
+        showError('Błąd połączenia z API: ' + err.message);
+        readerStatus.textContent = 'Błąd API – sprawdź backend';
+      } finally {
+        showLoading(false);
+        // Restart scanner after 3s (for continuous demo)
+        setTimeout(() => {
+          if (currentMode === 'camera') startScanner();
+        }, 3000);
+      }
+    }
+    
+    // Manual scan button
+    scanBtn.addEventListener('click', () => {
+      const pin = manualPin.value.trim();
+      if (!/^\d{6}$/.test(pin)) return showError('PIN musi mieć dokładnie 6 cyfr');
+      handleScan(pin);
+    });
+    
+    // History management
+    function addHistory(success, message, userId, code) {
+      const timestamp = new Date().toLocaleString('pl-PL');
+      const item = {
+        success,
+        message,
+        userId,
+        code: code.substring(0, 10) + '...', // Truncate
+        timestamp
+      };
+      history.unshift(item);
+      history = history.slice(0, 5); // Last 5
+      localStorage.setItem('modivoHistory', JSON.stringify(history));
+      renderHistory();
+    }
+    
+    function renderHistory() {
+      if (history.length === 0) {
+        historyList.innerHTML = '<p class="history-item">Brak transakcji</p>';
+        return;
+      }
+      historyList.innerHTML = history.map(item => `
+        <div class="history-item ${item.success ? 'history-success' : 'history-error'}">
+          <strong>${item.timestamp}</strong><br>
+          ${item.message}<br>
+          <small>User: ${item.userId} | Kod: ${item.code}</small>
+        </div>
+      `).join('');
+    }
+    
+    // Init: Load history, start camera
+    renderHistory();
+    toggleCamera(); // Default mode
+    
+    // Keyboard: Enter on PIN
+    manualPin.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') scanBtn.click();
+    });
+    
+    // Cleanup on unload
+    window.addEventListener('beforeunload', () => {
+      if (html5QrCode && isScanning) html5QrCode.stop();
+    });
+  </script>
 </body>
 </html>
