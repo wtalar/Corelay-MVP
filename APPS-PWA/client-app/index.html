@@ -1,251 +1,495 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corelay - Panel Klienta</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js"></script>
-    <style>
-        /* Stylizacja dla Profesjonalizmu i Kontrastu */
-        body { 
-            font-family: Arial, sans-serif; 
-            background-color: #1c1c1c; 
-            color: #ecf0f1; 
-            margin: 0; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-        }
-        .header { 
-            font-size: 1.8em; 
-            font-weight: 900; 
-            margin-bottom: 25px; 
-            color: #2ecc71; /* Akcent kolorystyczny: Corelay Green */
-        }
-        .card { 
-            background-color: #2c3e50; 
-            padding: 20px; 
-            border-radius: 10px; 
-            width: 100%; 
-            max-width: 400px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); 
-            border-left: 5px solid #3498db; 
-        }
-        .code-container { 
-            padding: 10px; 
-            background-color: #fff; 
-            border-radius: 8px; 
-            margin-bottom: 15px; 
-            display: flex;
-            justify-content: center;
-        }
-        .status { 
-            font-weight: bold; 
-            padding: 5px 10px; 
-            border-radius: 5px; 
-            text-align: center; 
-            font-size: 0.9em;
-        }
-        .status.ready { background-color: #3498db; }
-        .status.picked { background-color: #f1c40f; color: #000; }
-        .status.return { background-color: #e74c3c; }
-        .btn { 
-            background-color: #2ecc71; 
-            color: #000; 
-            padding: 12px; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            width: 100%; 
-            margin-top: 10px; 
-            font-weight: bold; 
-            transition: background-color 0.2s; 
-            text-transform: uppercase;
-        }
-        .btn.secondary {
-             background-color: #7f8c8d;
-             color: white;
-             font-size: 0.9em;
-        }
-        .btn:hover { background-color: #27ae60; }
-        .pin-display { 
-            background-color: #f39c12; 
-            color: #000; 
-            padding: 15px; 
-            border-radius: 5px; 
-            text-align: center; 
-            font-size: 1.5em; 
-            font-weight: bold; 
-            margin-top: 15px; 
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Corelay Client App – Uniwersalny QR dla odbioru i zwrotów paczek. MVP Demo.">
+  <title>Corelay App – Klient</title>
+  
+  <!-- PWA Manifest (dodaj manifest.json w folderze dla full PWA) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007bff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <!-- Fonts: Google Roboto (clean, modern) -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Icons: Font Awesome CDN (dla QR, check icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- QR Code Library: qrcode.js CDN (generate QR w canvas) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  
+  <style>
+    /* Global Styles: Mobile-first, minimalist blue theme */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 400px; /* Mobile-optimized */
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 123, 255, 0.1);
+      overflow: hidden;
+    }
+    header {
+      background: #007bff;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.4em;
+      margin-bottom: 5px;
+    }
+    header p {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+    main {
+      padding: 20px;
+    }
+    /* Login Section */
+    #login-section {
+      text-align: center;
+    }
+    #email-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    #email-input:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+    #login-btn {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #login-btn:hover {
+      background: #0056b3;
+    }
+    #login-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    /* Orders List */
+    #orders-section {
+      display: none;
+    }
+    .order-item {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .order-id {
+      font-weight: 500;
+      color: #007bff;
+    }
+    .order-status {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      font-weight: 500;
+    }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-picked { background: #d1ecf1; color: #0c5460; }
+    .status-return-pending { background: #f8d7da; color: #721c24; }
+    .products-list {
+      list-style: none;
+      margin-bottom: 10px;
+    }
+    .products-list li {
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+    /* Return Checkbox */
+    .return-checkboxes {
+      display: none; /* Pokazuj tylko dla picked orders */
+    }
+    .return-checkboxes input[type="checkbox"] {
+      margin-right: 5px;
+    }
+    /* Buttons */
+    .action-btn {
+      width: 100%;
+      padding: 12px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .pickup-btn {
+      background: #28a745;
+      color: white;
+    }
+    .pickup-btn:hover { background: #218838; }
+    .return-btn {
+      background: #ffc107;
+      color: #333;
+    }
+    .return-btn:hover { background: #e0a800; }
+    .return-btn:disabled { background: #ccc; }
+    /* QR Display */
+    #qr-section {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+    #qr-canvas {
+      max-width: 200px;
+      margin: 10px auto;
+      display: block;
+    }
+    #qr-info {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 10px;
+    }
+    #expiry-countdown {
+      font-weight: 500;
+      color: #007bff;
+    }
+    /* Loading & Error */
+    #loading {
+      text-align: center;
+      padding: 20px;
+      display: none;
+    }
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #007bff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #error-toast {
+      display: none;
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: #dc3545;
+      color: white;
+      border-radius: 8px;
+      z-index: 1000;
+    }
+    /* Responsive */
+    @media (min-width: 600px) {
+      .container { max-width: 500px; }
+    }
+    /* Hide sections based on state */
+    .hidden { display: none !important; }
+  </style>
 </head>
 <body>
-
-    <div class="header">CORELAY - Panel Klienta</div>
-    <div id="loading" style="color: #95a5a6;">Ładowanie zamówień i weryfikacja API...</div>
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-qrcode"></i> Corelay App</h1>
+      <p>Twoje zamówienia i zwroty – jeden QR</p>
+    </header>
     
-    <div id="orders-list">
-        </div>
+    <main>
+      <!-- Login Section -->
+      <section id="login-section">
+        <h2>Wprowadź email</h2>
+        <input type="email" id="email-input" placeholder="np. klient@corelay.pl" required>
+        <button id="login-btn"><i class="fas fa-sign-in-alt"></i> Zaloguj</button>
+      </section>
+      
+      <!-- Orders Section -->
+      <section id="orders-section">
+        <h2>Zamówienia (<span id="user-email"></span>)</h2>
+        <div id="orders-list"></div>
+      </section>
+      
+      <!-- Loading Spinner -->
+      <div id="loading">
+        <div class="spinner"></div>
+        <p>Ładowanie...</p>
+      </div>
+      
+      <!-- QR Section -->
+      <section id="qr-section">
+        <h3 id="qr-title">Generuj QR</h3>
+        <canvas id="qr-canvas"></canvas>
+        <p id="qr-info"></p>
+        <div id="expiry-countdown"></div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- Error Toast -->
+  <div id="error-toast">
+    <i class="fas fa-exclamation-triangle"></i> <span id="error-message"></span>
+  </div>
+  
+  <!-- PWA Service Worker (stub – dodaj sw.js dla offline) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => console.log('SW not registered'));
+    }
+  </script>
+  
+  <script>
+    // ============================================
+    // JAVASCRIPT LOGIKA CLIENT APP (Integracja z API)
+    // ============================================
     
-    <div id="main-code-section" class="card" style="display: none;">
-        <h3>🛡️ Twój Uniwersalny Kod DYNAMICZNY</h3>
-        <p style="font-size: 0.8em; color: #f1c40f;">Kod wygasa co <span id="timer">30</span> sekund. **Zero ryzyka screenshotów!** (Bezpieczeństwo klasy CORE)</p>
-        <div class="code-container">
-            <canvas id="qr-code"></canvas>
-        </div>
-    </div>
+    // Konfiguracja API (zmień na production URL)
+    const API_BASE = 'http://localhost:3000'; // Local dev: zmień na Render URL po deploy backend
     
-    <div id="guest-pin-section" class="card" style="display: none;">
-        <h3>👤 Kod Gościnny (Delegowanie)</h3>
-        <p style="font-size: 0.8em; color: #9b59b6;">Wyślij ten PIN koledze. Ważny przez 60 minut.</p>
-        <div class="pin-display" id="guest-pin-display"></div>
-    </div>
-
-    <script>
-        // UWAGA: KLUCZOWE! Użyj adresu URL swojego API z Render!
-        const API_BASE_URL = 'https://corelay-mvp.onrender.com/api'; 
-        const USER_ID = 'user_wojtek'; // Stały ID do testu
+    // Global state
+    let currentUser = localStorage.getItem('corelayUser') || null;
+    let orders = [];
+    let selectedOrder = null;
+    let qrInterval = null;
+    
+    // DOM elements
+    const loginSection = document.getElementById('login-section');
+    const ordersSection = document.getElementById('orders-section');
+    const loading = document.getElementById('loading');
+    const qrSection = document.getElementById('qr-section');
+    const emailInput = document.getElementById('email-input');
+    const loginBtn = document.getElementById('login-btn');
+    const userEmailEl = document.getElementById('user-email');
+    const ordersList = document.getElementById('orders-list');
+    const qrCanvas = document.getElementById('qr-canvas');
+    const qrTitle = document.getElementById('qr-title');
+    const qrInfo = document.getElementById('qr-info');
+    const expiryCountdown = document.getElementById('expiry-countdown');
+    const errorToast = document.getElementById('error-toast');
+    const errorMessage = document.getElementById('error-message');
+    
+    // Show error toast
+    function showError(msg, duration = 5000) {
+      errorMessage.textContent = msg;
+      errorToast.style.display = 'block';
+      setTimeout(() => errorToast.style.display = 'none', duration);
+    }
+    
+    // Show loading
+    function showLoading(show = true) {
+      loading.style.display = show ? 'block' : 'none';
+      if (show) loginBtn.disabled = true;
+      else loginBtn.disabled = false;
+    }
+    
+    // Fetch orders from API
+    async function fetchOrders(userId) {
+      showLoading(true);
+      try {
+        const response = await fetch(`${API_BASE}/api/user/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+        });
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Błąd pobierania zamówień');
+        orders = data.orders || [];
+        renderOrders();
+      } catch (err) {
+        showError(`Błąd: ${err.message}. Sprawdź połączenie z API.`);
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Render orders list
+    function renderOrders() {
+      if (orders.length === 0) {
+        ordersList.innerHTML = '<p>Brak zamówień. Użyj admin panelu do seeda testowego.</p>';
+        return;
+      }
+      ordersList.innerHTML = orders.map(order => {
+        const statusClass = `status-${order.status.toLowerCase().replace('_', '-')}`;
+        const isPicked = order.status === 'PICKED_UP';
+        const inReturnWindow = isPicked && order.maxTime > Date.now(); // Check 14 days
+        const deadline = order.pickupDeadline ? new Date(order.pickupDeadline).toLocaleDateString('pl-PL') : 'N/A';
         
-        let qrCodeInterval;
-
-        // Funkcja do pobierania zamówień
-        async function fetchOrders() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/user/orders`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: USER_ID })
-                });
-                const data = await response.json();
-
-                if (data.success && data.orders.length > 0) {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('main-code-section').style.display = 'block';
-                    displayOrders(data.orders);
-                    generateDynamicCode();
-                    qrCodeInterval = setInterval(generateDynamicCode, 30000); // Odświeżanie co 30 sekund
-                } else {
-                    document.getElementById('loading').innerText = 'Brak aktywnych zamówień.';
-                }
-            } catch (error) {
-                document.getElementById('loading').innerText = 'Błąd połączenia z API. Serwer Render śpi lub URL jest niepoprawny.';
-                console.error('Błąd połączenia API:', error);
-            }
+        return `
+          <div class="order-item">
+            <div class="order-header">
+              <span class="order-id">Zamówienie: ${order.orderId}</span>
+              <span class="order-status ${statusClass}">${order.status.replace('_', ' ')}</span>
+            </div>
+            <ul class="products-list">
+              ${order.products.map(p => `<li>${p.name} – ${p.price} PLN</li>`).join('')}
+            </ul>
+            <p><small>Ostatnia aktualizacja: ${new Date(order.lastUpdated || order.createdAt).toLocaleString('pl-PL')}</small></p>
+            ${isPicked ? `
+              <p><small>Okno zwrotu do: ${new Date(order.maxTime).toLocaleDateString('pl-PL')}</small></p>
+              <div class="return-checkboxes" ${inReturnWindow ? '' : 'style="display:none"'}>
+                <h4>Zwrot produktów:</h4>
+                ${order.products.map((p, idx) => `
+                  <label><input type="checkbox" value="${idx}" ${idx === 0 ? 'checked' : ''}> ${p.name}</label><br>
+                `).join('')}
+                <button class="action-btn return-btn" onclick="generateReturnQR('${order.orderId}')">
+                  <i class="fas fa-undo"></i> Generuj QR Zwrotu
+                </button>
+              </div>
+            ` : ''}
+            <button class="action-btn pickup-btn" onclick="generatePickupQR('${order.orderId}')" ${order.status !== 'PENDING_PICKUP' ? 'disabled' : ''}>
+              <i class="fas fa-qrcode"></i> Generuj QR Odbioru
+            </button>
+            ${!inReturnWindow && isPicked ? '<p style="color: red;"><small>Okno zwrotu wygasło.</small></p>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Generate QR for pickup
+    async function generatePickupQR(orderId) {
+      if (!currentUser) return showError('Nie zalogowany – wprowadź email');
+      selectedOrder = orders.find(o => o.orderId === orderId);
+      if (!selectedOrder) return showError('Zamówienie nie znalezione');
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/user/generate_guest_pin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser, orderId })
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Błąd generowania QR');
+        
+        displayQR(data.qrData, 'Odbierz paczkę', `${data.expiresIn} ms`, data.expiresAt);
+      } catch (err) {
+        showError(`Błąd: ${err.message}`);
+      }
+    }
+    
+    // Generate QR for return (similar, with products selected)
+    async function generateReturnQR(orderId) {
+      if (!currentUser) return showError('Nie zalogowany');
+      selectedOrder = orders.find(o => o.orderId === orderId);
+      if (!selectedOrder || selectedOrder.status !== 'PICKED_UP') return showError('Nie kwalifikuje się do zwrotu');
+      
+      // Get selected products (mock: all for demo, or parse checkboxes in future)
+      const returnedProducts = selectedOrder.products.map(p => p.name); // Simple: all
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/user/generate_guest_pin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser, orderId })
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Błąd generowania QR zwrotu');
+        
+        displayQR(data.qrData, 'Zwróć paczkę', `${data.expiresIn} ms`, data.expiresAt);
+      } catch (err) {
+        showError(`Błąd: ${err.message}`);
+      }
+    }
+    
+    // Display QR with countdown
+    function displayQR(qrData, title, expiresIn, expiresAt) {
+      qrTitle.textContent = title;
+      qrInfo.textContent = `Skanuj w sklepie/paczkomacie. Typ: ${title.includes('Zwró') ? 'Zwrot' : 'Odbiór'}`;
+      
+      // Generate QR canvas
+      QRCode.toCanvas(qrCanvas, qrData, { width: 200, margin: 2, color: { dark: '#000', light: '#FFF' } }, (err) => {
+        if (err) return showError('Błąd generowania QR');
+      });
+      
+      // Countdown expiry
+      const endTime = new Date(expiresAt).getTime();
+      qrInterval = setInterval(() => {
+        const now = Date.now();
+        const timeLeft = endTime - now;
+        if (timeLeft <= 0) {
+          expiryCountdown.textContent = 'QR wygasł – wygeneruj nowy';
+          clearInterval(qrInterval);
+          qrCanvas.style.opacity = '0.5';
+          return;
         }
-
-        // FUNKCJA: Wyświetlanie zamówień
-        function displayOrders(orders) {
-            const listElement = document.getElementById('orders-list');
-            listElement.innerHTML = '';
-
-            orders.forEach(order => {
-                const orderCard = document.createElement('div');
-                orderCard.className = 'card';
-                
-                let statusClass = 'ready';
-                let actionButton = '';
-                let returnInfo = '';
-
-                if (order.status === 'READY_FOR_PICKUP') {
-                    statusClass = 'ready';
-                    actionButton = `<button class="btn secondary" onclick="alert('Idź do Sklepu/Paczkomatu i zeskanuj kod (Tryb RELAY)')">Zeskanuj, aby odebrać</button>`;
-                } else if (order.status === 'PICKED_UP') {
-                    statusClass = 'picked';
-                    // Informacja o czasie na zwrot (kluczowa dla B2C)
-                    const expiresTime = moment(order.maxTime);
-                    const daysLeft = expiresTime.diff(moment(), 'days');
-                    returnInfo = `<p style="font-size:0.8em; color:#fff;">Dni do zwrotu: ${daysLeft} (do ${expiresTime.format('DD.MM')})</p>`;
-
-                    // Przycisk zwrotu i kod gościnny (logika ZWROTÓW I DELEGOWANIA)
-                    actionButton = `
-                        <button class="btn" onclick="initiateReturnAndDelegation('${order.orderId}')">Zwróć Paczkę</button>
-                        <button class="btn secondary" onclick="generateGuestPin('${order.orderId}')">Generuj Kod Gościnny (PIN)</button>
-                    `;
-                } else if (order.status.startsWith('RETURN')) {
-                    statusClass = 'return';
-                }
-
-                orderCard.innerHTML = `
-                    <p style="font-weight:bold;">Zamówienie: ${order.orderId} - ${order.product}</p>
-                    <p style="font-size:0.8em; color:#bdc3c7;">Odbiór/Zwrot w: ${order.storeId}</p>
-                    ${returnInfo}
-                    <div class="status ${statusClass}">Status: ${order.status.replace('_', ' ')}</div>
-                    ${actionButton}
-                `;
-                listElement.appendChild(orderCard);
-            });
-        }
-
-        // FUNKCJA: Generowanie Dynamicznego Kodu (BLIK)
-        function generateDynamicCode() {
-            const timestamp = moment().valueOf(); // Aktualny czas w milisekundach
-            const codeData = `${USER_ID}|${timestamp}`; 
-            
-            // Kod QR zawiera ID użytkownika ORAZ czas (dla weryfikacji bezpieczeństwa)
-            QRCode.toCanvas(document.getElementById('qr-code'), codeData, { width: 200, color: { dark: '#1c1c1c', light: '#fff' } }, (error) => {
-                if (error) console.error(error);
-            });
-
-            // Aktualizacja timera
-            let seconds = 30;
-            const timerElement = document.getElementById('timer');
-            
-            // Kasujemy stary interwał i ustawiamy nowy (aby uniknąć nakładania się timerów)
-            if (window.qrTimerInterval) clearInterval(window.qrTimerInterval);
-
-            window.qrTimerInterval = setInterval(() => {
-                seconds--;
-                timerElement.innerText = seconds;
-                if (seconds <= 0) {
-                    clearInterval(window.qrTimerInterval);
-                    timerElement.innerText = '0 (Wygasł, odświeżanie...)';
-                }
-            }, 1000);
-        }
-
-        // FUNKCJA: Inicjowanie Zwrotu (Konieczne przed skanem zwrotu)
-        function initiateReturnAndDelegation(orderId) {
-             const action = prompt("Gdzie chcesz zwrócić? Wpisz: SALON (Modivo/LPP) lub PACZKOMAT (InPost)");
-             
-             if (action && action.toUpperCase() === 'PACZKOMAT') {
-                 // W realnym systemie to by tylko ustawiało status w API
-                 alert(`Status zwrotu dla ${orderId} ustawiony na: PACZKOMAT. Teraz zeskanuj kod w Symulatorze Paczkomatu.`);
-             } else if (action && action.toUpperCase() === 'SALON') {
-                 alert(`Status zwrotu dla ${orderId} ustawiony na: SALON. Teraz zeskanuj kod w Symulatorze Sklepu.`);
-             } else {
-                 alert("Anulowano. Wpisz SALON lub PACZKOMAT.");
-             }
-        }
-
-
-        // FUNKCJA: Generowanie Kodu Gościnnego (PIN)
-        async function generateGuestPin(orderId) {
-            document.getElementById('guest-pin-section').style.display = 'block';
-
-            const response = await fetch(`${API_BASE_URL}/user/generate_guest_pin`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: USER_ID, orderId: orderId })
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                const expiresMoment = moment(data.expiresAt).format('HH:mm:ss');
-                document.getElementById('guest-pin-display').innerHTML = `
-                    PIN: <strong>${data.pin}</strong><br>
-                    Ważny do: ${expiresMoment}
-                `;
-            } else {
-                 document.getElementById('guest-pin-display').innerHTML = `Błąd generowania PINu. ${data.message}`;
-            }
-        }
-
-        fetchOrders();
-    </script>
-
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        expiryCountdown.textContent = `Wygasa za: ${minutes}m ${seconds}s`;
+      }, 1000);
+      
+      qrSection.style.display = 'block';
+      ordersSection.scrollTop = ordersSection.scrollHeight; // Scroll do QR
+    }
+    
+    // Clear QR on hide (future: button)
+    function clearQR() {
+      if (qrInterval) clearInterval(qrInterval);
+      qrSection.style.display = 'none';
+      qrCanvas.innerHTML = '';
+      selectedOrder = null;
+    }
+    
+    // Event listeners
+    loginBtn.addEventListener('click', () => {
+      const email = emailInput.value.trim();
+      if (!email || !email.includes('@')) {
+        return showError('Wprowadź poprawny email');
+      }
+      currentUser = email;
+      localStorage.setItem('corelayUser', email);
+      userEmailEl.textContent = email;
+      loginSection.style.display = 'none';
+      ordersSection.style.display = 'block';
+      fetchOrders(email);
+    });
+    
+    // Init: If logged in, load
+    if (currentUser) {
+      emailInput.value = currentUser;
+      userEmailEl.textContent = currentUser;
+      loginSection.style.display = 'none';
+      ordersSection.style.display = 'block';
+      fetchOrders(currentUser);
+    }
+    
+    // Keyboard support: Enter on email
+    emailInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loginBtn.click();
+    });
+    
+    // Future: Add logout button
+    // <button onclick="currentUser=null; localStorage.removeItem('corelayUser'); location.reload();">Logout</button>
+  </script>
 </body>
 </html>
