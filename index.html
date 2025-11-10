@@ -1,0 +1,2188 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corelay - Aplikacja Klienta</title>
+    
+    <!-- Ikona (Favicon) - używając SVG logo -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='4' y='4' width='12' height='12' fill='%23007BFF' rx='2'/%3E%3Crect x='24' y='4' width='12' height='12' fill='%23007BFF' rx='2'/%3E%3Crect x='4' y='24' width='12' height='12' fill='%23007BFF' rx='2'/%3E%3Cpath d='M20 24 L36 36 M36 36 L30 36 M36 36 L36 30' stroke='%23007BFF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+    <!-- Czcionki (Inter & JetBrains Mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <!-- Biblioteka QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        /* * ==============================================
+         * 1. DESIGN SYSTEM (ZMIENNE CSS)
+         * ==============================================
+         */
+        :root {
+            /* Paleta Podstawowa (Niebieski) */
+            --color-primary: #007BFF;
+            --color-primary-hover: #0056b3; /* Ciemniejszy dla hover */
+            --color-primary-light: rgba(0, 123, 255, 0.1);
+            --color-primary-light-solid: #E3F2FD;
+
+            /* Semantyka */
+            --color-success: #28A745;
+            --color-success-light: #D4EDDA;
+            --color-error: #DC3545;
+            --color-error-light: #F8D7DA;
+            --color-warning: #FFC107;
+            --color-warning-light: #FFF3CD;
+
+            /* Neutralne (Tryb Jasny) */
+            --color-bg: #FFFFFF;
+            --color-bg-secondary: #F8F9FA;
+            --color-bg-tertiary: #F1F3F5;
+            --color-text: #212529;
+            --color-text-secondary: #6C757D;
+            --color-border: #DEE2E6;
+            --color-border-hover: #ADB5BD;
+
+            /* Cienie */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 8px 20px rgba(0, 123, 255, 0.15);
+            --shadow-focus: 0 0 0 3px var(--color-primary-light);
+
+            /* Odstępy (Siatka 8px) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            --space-8: 32px;
+            --space-10: 40px;
+            --space-12: 48px;
+
+            /* Typografia */
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+            /* Promień Zaokrąglenia */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --radius-full: 9999px;
+
+            /* Przejścia */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* * ==============================================
+         * 2. TRYB CIEMNY
+         * ==============================================
+         */
+        [data-theme="dark"] {
+            --color-primary-hover: #0069d9;
+            --color-primary-light: rgba(0, 123, 255, 0.15);
+            --color-primary-light-solid: #2a3b4e;
+
+            /* Neutralne (Tryb Ciemny) */
+            --color-bg: #121212; /* Bardziej jak Linear/Apple niż czarny */
+            --color-bg-secondary: #1E1E1E;
+            --color-bg-tertiary: #2A2A2A;
+            --color-text: #F8F9FA;
+            --color-text-secondary: #ADB5BD;
+            --color-border: #343A40;
+            --color-border-hover: #495057;
+
+            /* Cienie (subtelniejsze w trybie ciemnym) */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+            --shadow-focus: 0 0 0 3px var(--color-primary-light);
+        }
+
+        /* * ==============================================
+         * 3. STYLE GLOBALNE I RESET
+         * ==============================================
+         */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: var(--font-family);
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.5;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            transition: background-color var(--transition-normal), color var(--transition-normal);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* * ==============================================
+         * 4. EKRAN ŁADOWANIA (Perfekcyjny)
+         * ==============================================
+         */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: var(--color-bg);
+            display: grid;
+            place-items: center;
+            z-index: 10000;
+            transition: opacity 300ms ease-out, visibility 300ms ease-out;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #loading-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loading-logo {
+            animation: pulse-logo 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        .loading-logo svg {
+            width: 60px;
+            height: 60px;
+        }
+        
+        /* Kluczowa klatka animacji dla loga */
+        @keyframes pulse-logo {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(0.95);
+            }
+        }
+
+        /* * ==============================================
+         * 5. UKŁAD (HEADER, MAIN, FOOTER)
+         * ==============================================
+         */
+        .app-header {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            padding: var(--space-4) var(--space-5);
+            background-color: rgba(255, 255, 255, 0.8); /* Dopasowuje się w trybie ciemnym */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            transition: background-color var(--transition-normal), border-color var(--transition-normal);
+        }
+
+        [data-theme="dark"] .app-header {
+            background-color: rgba(18, 18, 18, 0.8); /* Efekt szkła w trybie ciemnym */
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-text);
+            text-decoration: none;
+        }
+
+        .logo-container svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1024px;
+            margin: 0 auto;
+            padding: var(--space-6) var(--space-5);
+        }
+
+        .app-footer {
+            text-align: center;
+            padding: var(--space-6) var(--space-5);
+            border-top: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            margin-top: auto;
+        }
+
+        /* * ==============================================
+         * 6. SKALOWANIE TYPOGRAFII (z PDF)
+         * ==============================================
+         */
+        h1, .h1 {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            margin-bottom: var(--space-4);
+        }
+
+        h2, .h2 {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.3;
+            letter-spacing: -0.01em;
+            margin-bottom: var(--space-3);
+        }
+
+        h3, .h3 {
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin-bottom: var(--space-2);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            line-height: 1.6;
+        }
+
+        small, .small {
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        .caption {
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.4;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* * ==============================================
+         * 7. KOMPONENTY (z PDF + Ulepszenia)
+         * ==============================================
+         */
+
+        /* Przyciski (Button) */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-6);
+            font-family: var(--font-family);
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1;
+            border-radius: var(--radius-md);
+            border: 1.5px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            user-select: none;
+            min-height: 48px; /* Cel dotykowy */
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-primary-hover);
+            border-color: var(--color-primary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--color-primary-light);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-tertiary {
+            background-color: var(--color-bg-secondary);
+            color: var(--color-text);
+            border-color: var(--color-border);
+        }
+
+        .btn-tertiary:hover {
+            background-color: var(--color-bg-tertiary);
+            border-color: var(--color-border-hover);
+        }
+
+        .btn-large {
+            padding: var(--space-4) var(--space-8);
+            font-size: 18px;
+            min-height: 56px;
+        }
+        
+        .btn-icon {
+            padding: var(--space-3);
+            min-width: 48px;
+            border-radius: var(--radius-full);
+            background-color: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid transparent;
+        }
+        
+        .btn-icon:hover {
+            background-color: var(--color-bg-secondary);
+            color: var(--color-text);
+            border-color: var(--color-border);
+        }
+
+        .btn:disabled,
+        .btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Pola tekstowe (Input) */
+        .form-group {
+            margin-bottom: var(--space-4);
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: var(--space-2);
+            color: var(--color-text);
+        }
+        
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: var(--space-4);
+            color: var(--color-text-secondary);
+            width: 20px;
+            height: 20px;
+        }
+
+        .input {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-family);
+            font-size: 16px;
+            color: var(--color-text);
+            background-color: var(--color-bg);
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            min-height: 48px;
+        }
+        
+        .input-with-icon {
+            padding-left: var(--space-10);
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-focus);
+        }
+        
+        .input:disabled {
+            background-color: var(--color-bg-secondary);
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .input::placeholder {
+            color: var(--color-text-secondary);
+            opacity: 0.8;
+        }
+        
+        .select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' viewBox='0 0 24 24' stroke='%236C757D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right var(--space-4) center;
+            background-size: 20px;
+            padding-right: var(--space-10);
+        }
+
+        [data-theme="dark"] .select {
+             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' viewBox='0 0 24 24' stroke='%23ADB5BD' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        }
+
+        /* Karty (Card) */
+        .card {
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            transition: all var(--transition-normal);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+            border-color: var(--color-border-hover);
+        }
+
+        /* Odznaki (Badge) */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-1) var(--space-3);
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: var(--radius-full);
+            line-height: 1.2;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .badge svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .badge-success {
+            background-color: var(--color-success-light);
+            color: var(--color-success);
+        }
+        [data-theme="dark"] .badge-success {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #58cc73;
+        }
+
+        .badge-error {
+            background-color: var(--color-error-light);
+            color: var(--color-error);
+        }
+        [data-theme="dark"] .badge-error {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #f17b86;
+        }
+
+        .badge-warning {
+            background-color: var(--color-warning-light);
+            color: #856404;
+        }
+        [data-theme="dark"] .badge-warning {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffe08a;
+        }
+        
+        .badge-info {
+            background-color: var(--color-primary-light-solid);
+            color: var(--color-primary);
+        }
+        [data-theme="dark"] .badge-info {
+            background-color: var(--color-primary-light);
+            color: #5cadff;
+        }
+        
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-4);
+            z-index: 1000;
+            animation: fadeIn var(--transition-fast) ease-out;
+        }
+
+        .modal-content {
+            background-color: var(--color-bg);
+            border-radius: var(--radius-xl);
+            padding: var(--space-8);
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp var(--transition-normal) cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: var(--space-4);
+            right: var(--space-4);
+        }
+        
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-full);
+            display: grid;
+            place-items: center;
+            margin: 0 auto var(--space-4);
+        }
+        .modal-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+        
+        .modal-icon.success {
+            background-color: var(--color-success-light);
+            color: var(--color-success);
+        }
+        .modal-icon.error {
+            background-color: var(--color-error-light);
+            color: var(--color-error);
+        }
+        
+        .modal-content h2 {
+            text-align: center;
+            margin-bottom: var(--space-2);
+        }
+        .modal-content .modal-description {
+            text-align: center;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-6);
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-4);
+            margin-top: var(--space-6);
+        }
+
+        /* Powiadomienia (Toast) */
+        #toast-container {
+            position: fixed;
+            bottom: var(--space-6);
+            right: var(--space-6);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-4) var(--space-5);
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-left-width: 4px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all var(--transition-slow) cubic-bezier(0.25, 0.8, 0.25, 1);
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .toast-success {
+            border-left-color: var(--color-success);
+            color: var(--color-success);
+        }
+        [data-theme="dark"] .toast-success { color: #58cc73; }
+
+        .toast-error {
+            border-left-color: var(--color-error);
+            color: var(--color-error);
+        }
+        [data-theme="dark"] .toast-error { color: #f17b86; }
+        
+        .toast-message {
+            color: var(--color-text);
+            flex: 1;
+        }
+
+        /* * ==============================================
+         * 8. SPECYFICZNE STYLE APLIKACJI
+         * ==============================================
+         */
+        
+        /* Sekcja logowania (Email) */
+        .login-section {
+            max-width: 480px;
+            margin: 0 auto var(--space-8);
+            text-align: center;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: var(--space-8);
+        }
+        .login-section .input-wrapper {
+            display: flex;
+            gap: var(--space-4);
+        }
+
+        /* Zakładki (Tabs) */
+        .tabs-nav {
+            display: flex;
+            gap: var(--space-2);
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: var(--space-8);
+            overflow-x: auto;
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+        .tabs-nav::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        .tab-btn {
+            padding: var(--space-3) var(--space-4);
+            background-color: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-bottom: -1.5px; /* Aby nachodziło na border-bottom */
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--color-text);
+            background-color: var(--color-bg-secondary);
+        }
+
+        .tab-btn.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 300ms ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Dashboard (Filtry) */
+        .filters-container {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        /* Dashboard (Lista zamówień) */
+        #ordersContainer {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--space-6);
+        }
+
+        .order-card {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-5);
+            padding: 0; /* Card ma własny padding, ale my go nadpisujemy */
+        }
+        
+        .order-card-header {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+            padding: var(--space-5) var(--space-6) var(--space-4);
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .order-card-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: var(--space-4);
+        }
+
+        .order-card-header h3 {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            margin-bottom: 0;
+        }
+        
+        .order-card-store {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+        
+        .order-card-body {
+            padding: 0 var(--space-6) var(--space-5);
+        }
+        
+        .order-items-list {
+            list-style: none;
+            margin-bottom: var(--space-4);
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-3) 0;
+            border-bottom: 1px dashed var(--color-border);
+        }
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-name {
+            font-weight: 500;
+        }
+        
+        .item-price {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+            margin-left: var(--space-4);
+        }
+        
+        .order-summary {
+            margin-top: var(--space-4);
+            padding-top: var(--space-4);
+            border-top: 1px solid var(--color-border);
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            margin-bottom: var(--space-2);
+        }
+        .summary-row.total {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .order-card-footer {
+            padding: var(--space-5) var(--space-6);
+            background-color: var(--color-bg-secondary);
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+        
+        .footer-info {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        
+        .footer-info .info-line {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+        .footer-info .info-line svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .order-card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: var(--space-12) var(--space-6);
+            background-color: var(--color-bg-secondary);
+            border: 1.5px dashed var(--color-border);
+            border-radius: var(--radius-lg);
+            color: var(--color-text-secondary);
+        }
+        
+        .empty-state-icon {
+            width: 60px;
+            height: 60px;
+            margin-bottom: var(--space-4);
+            color: var(--color-border-hover);
+        }
+        
+        .empty-state h3 {
+            color: var(--color-text);
+        }
+
+        /* Generowanie PIN */
+        #generate-view, #verify-view {
+            max-width: 520px;
+            margin: 0 auto;
+        }
+        
+        .validity-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-3);
+            margin-bottom: var(--space-6);
+        }
+        .validity-options label {
+            display: block;
+            padding: var(--space-4) var(--space-3);
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .validity-options label:hover {
+            border-color: var(--color-border-hover);
+            background-color: var(--color-bg-secondary);
+        }
+        .validity-options input {
+            display: none;
+        }
+        .validity-options input:checked + span {
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .validity-options input:checked + span::before {
+            content: '✓ ';
+        }
+        
+        .pin-result-box {
+            display: none; /* Ukryte domyślnie */
+            text-align: center;
+            padding: var(--space-8) var(--space-6);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            background-color: var(--color-bg-secondary);
+            margin-top: var(--space-8);
+        }
+        
+        #pinCode {
+            font-family: var(--font-mono);
+            font-size: 48px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            color: var(--color-primary);
+            margin: var(--space-4) 0;
+            display: block;
+        }
+        
+        #qrCanvas {
+            width: 200px !important;
+            height: 200px !important;
+            margin: 0 auto var(--space-6);
+            border-radius: var(--radius-md);
+            border: 4px solid var(--color-bg);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .pin-result-info {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            margin-bottom: var(--space-6);
+        }
+        
+        .pin-result-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--space-4);
+        }
+        
+        /* Weryfikacja PIN */
+        #pinInput {
+            font-family: var(--font-mono);
+            font-size: 32px;
+            text-align: center;
+            letter-spacing: 0.2em;
+            padding: var(--space-4);
+            min-height: 72px;
+        }
+        
+        /* * ==============================================
+         * 9. ANIMACJE I KLASY POMOCNICZE
+         * ==============================================
+         */
+        
+        /* Animacje (z PDF) */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(8px); }
+        }
+        
+        .animate-shake {
+            animation: shake 500ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+        }
+
+        /* Klasy pomocnicze */
+        .d-none { display: none !important; }
+        .w-full { width: 100%; }
+        .text-center { text-align: center; }
+        .text-success { color: var(--color-success); }
+        .text-error { color: var(--color-error); }
+        .text-secondary { color: var(--color-text-secondary); }
+
+        /* * ==============================================
+         * 10. RESPONSIVE DESIGN (MOBILE-FIRST)
+         * ==============================================
+         */
+        
+        /* Domyślnie (Mobile) */
+        .btn {
+            width: 100%; /* Przyciski domyślnie na całą szerokość */
+        }
+        
+        .header-controls {
+            gap: var(--space-2);
+        }
+        
+        main {
+            padding: var(--space-4) var(--space-4);
+        }
+        
+        .logo-container span {
+            display: none; /* Ukryj tekst "CORELAY" na mobilce */
+        }
+        
+        .order-card-actions {
+            flex-direction: column;
+        }
+        
+        .pin-result-actions {
+            grid-template-columns: 1fr;
+        }
+
+        /* Tablet (min-width: 480px) */
+        @media (min-width: 480px) {
+            main {
+                padding: var(--space-6) var(--space-5);
+            }
+            
+            .pin-result-actions {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* Mały Desktop (min-width: 768px) */
+        @media (min-width: 768px) {
+            .btn {
+                width: auto; /* Przyciski wracają do auto szerokości */
+            }
+            
+            .logo-container span {
+                display: block; /* Pokaż tekst "CORELAY" */
+            }
+            
+            .header-controls {
+                gap: var(--space-4);
+            }
+            
+            .filters-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            #ordersContainer {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .order-card-actions {
+                flex-direction: row;
+            }
+
+            .login-section .input-wrapper {
+                flex-direction: row;
+            }
+            .login-section .btn {
+                width: auto;
+            }
+        }
+        
+        /* Duży Desktop (min-width: 1024px) */
+        @media (min-width: 1024px) {
+            #ordersContainer {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ======================= EKRAN ŁADOWANIA ======================= -->
+    <div id="loading-overlay">
+        <div class="loading-logo">
+            <!-- SVG Logo (z PDF) -->
+            <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="4" width="12" height="12" fill="#007BFF" rx="2"/>
+                <rect x="24" y="4" width="12" height="12" fill="#007BFF" rx="2"/>
+                <rect x="4" y="24" width="12" height="12" fill="#007BFF" rx="2"/>
+                <path d="M20 24 L36 36 M36 36 L30 36 M36 36 L36 30" stroke="#007BFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ======================= NAGŁÓWEK APLIKACJI ======================= -->
+    <header class="app-header">
+        <a href="#" class="logo-container">
+            <!-- SVG Logo (z PDF) -->
+            <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="4" width="12" height="12" fill="var(--color-primary)" rx="2"/>
+                <rect x="24" y="4" width="12" height="12" fill="var(--color-primary)" rx="2"/>
+                <rect x="4" y="24" width="12" height="12" fill="var(--color-primary)" rx="2"/>
+                <path d="M20 24 L36 36 M36 36 L30 36 M36 36 L36 30" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>CORELAY</span>
+        </a>
+
+        <div class="header-controls">
+            <button class="btn btn-icon" id="theme-toggle-btn" aria-label="Zmień motyw">
+                <!-- Ikona słońca (tryb jasny) -->
+                <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                <!-- Ikona księżyca (tryb ciemny) -->
+                <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon d-none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+            <button class="btn btn-icon" aria-label="Profil użytkownika">
+                <!-- Ikona użytkownika -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ======================= GŁÓWNA ZAWARTOŚĆ ======================= -->
+    <main>
+
+        <!-- Sekcja "Logowania" przez Email -->
+        <section class="login-section">
+            <h2 class="h3">Witaj w Corelay</h2>
+            <p class="text-secondary">Wprowadź swój adres e-mail, aby zobaczyć swoje zamówienia i zarządzać odbiorami.</p>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <input type="email" id="userEmail" class="input input-with-icon" placeholder="wojtek@corelay.pl">
+                    <button id="saveEmailBtn" class="btn btn-primary" style="margin-left: var(--space-3);">Zaloguj</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Nawigacja Zakładek -->
+        <nav class="tabs-nav">
+            <button class="tab-btn active" data-tab="dashboard-view">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-grid"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                <span>Dashboard</span>
+            </button>
+            <button class="tab-btn" data-tab="generate-view">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Generuj PIN/QR</span>
+            </button>
+            <button class="tab-btn" data-tab="verify-view">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <span>Weryfikuj PIN</span>
+            </button>
+        </nav>
+
+        <!-- ======================= ZAWARTOŚĆ ZAKŁADEK ======================= -->
+        
+        <!-- 1. Dashboard (Lista Zamówień) -->
+        <section id="dashboard-view" class="tab-content active">
+            <h1 class="h2">Moje Zamówienia</h1>
+            
+            <!-- Filtry -->
+            <div class="filters-container">
+                <div class="form-group">
+                    <label for="filterStatus" class="form-label">Status</label>
+                    <select id="filterStatus" class="input select">
+                        <option value="all">Wszystkie</option>
+                        <option value="READY_FOR_PICKUP">Gotowe do odbioru</option>
+                        <option value="PICKED_UP">Odebrane</option>
+                        <option value="READY_FOR_RETURN">Do zwrotu</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterStore" class="form-label">Sklep</label>
+                    <select id="filterStore" class="input select">
+                        <option value="all">Wszystkie</option>
+                        <!-- Opcje sklepów będą dodane dynamicznie z JS -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Kontener na karty zamówień -->
+            <div id="ordersContainer">
+                <!-- Karty zamówień będą renderowane przez JS -->
+            </div>
+            
+            <!-- Stan pusty -->
+            <div id="empty-state-dashboard" class="empty-state d-none">
+                <svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-box"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <h3 class="h3">Brak zamówień</h3>
+                <p>Nie znaleziono zamówień pasujących do filtrów lub przypisanych do Twojego e-maila.</p>
+            </div>
+            
+        </section>
+
+        <!-- 2. Generowanie PIN/QR -->
+        <section id="generate-view" class="tab-content">
+            <h1 class="h2">Generuj Kod Odbioru</h1>
+            <p class="text-secondary">Wybierz zamówienie i czas ważności kodu, aby wygenerować jednorazowy PIN oraz kod QR do odbioru paczki.</p>
+            
+            <div class="form-group" style="margin-top: var(--space-8);">
+                <label for="selectOrder" class="form-label">1. Wybierz zamówienie</label>
+                <select id="selectOrder" class="input select">
+                    <option value="">Wybierz z listy...</option>
+                    <!-- Opcje będą dodane dynamicznie z JS -->
+                </select>
+            </div>
+            
+            <div id="empty-state-generate" class="empty-state d-none">
+                <svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-package"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <h3 class="h3">Brak zamówień</h3>
+                <p>Nie masz żadnych zamówień gotowych do odbioru.</p>
+            </div>
+
+            <div id="generate-form-content">
+                <div class="form-group">
+                    <label class="form-label">2. Wybierz czas ważności kodu</label>
+                    <div class="validity-options">
+                        <label>
+                            <input type="radio" name="validity" value="1" checked>
+                            <span>1 Godzina</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="validity" value="24">
+                            <span>24 Godziny</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="validity" value="72">
+                            <span>72 Godziny</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button id="generatePinBtn" class="btn btn-primary btn-large w-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-key"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                    Generuj Kod
+                </button>
+            </div>
+            
+            <!-- Wynik Generowania PIN -->
+            <div id="pinResult" class="pin-result-box">
+                <h3 class="h3">Twój kod odbioru</h3>
+                <canvas id="qrCanvas"></canvas>
+                <p class="pin-result-info">
+                    Ważny przez: <strong id="validityDisplay"></strong>h | Wygasa: <strong id="expiryDate"></strong>
+                </p>
+                <p class="caption">Jednorazowy PIN</p>
+                <code id="pinCode">123456</code>
+                <small id="qrDataDisplay" class="text-secondary"></small>
+                
+                <div class="pin-result-actions" style="margin-top: var(--space-6);">
+                    <button id="copyPinBtn" class="btn btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span class="btn-text">Kopiuj PIN</span>
+                    </button>
+                    <button id="downloadQrBtn" class="btn btn-tertiary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Pobierz QR
+                    </button>
+                </div>
+            </div>
+
+        </section>
+        
+        <!-- 3. Weryfikacja PIN -->
+        <section id="verify-view" class="tab-content">
+            <h1 class="h2">Weryfikuj Odbiór</h1>
+            <p class="text-secondary">Otrzymałeś kod odbioru od kogoś innego? Wprowadź 6-cyfrowy PIN, aby zweryfikować odbiór paczki.</p>
+            
+            <div class="form-group" style="margin-top: var(--space-8);">
+                <label for="pinInput" class="form-label">Wprowadź 6-cyfrowy PIN</label>
+                <input type="tel" id="pinInput" class="input" placeholder="_ _ _ _ _ _" maxlength="6" pattern="\d{6}">
+            </div>
+            
+            <button id="verifyPinBtn" class="btn btn-primary btn-large w-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user-check"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+                Weryfikuj i Odbierz
+            </button>
+        </section>
+
+    </main>
+
+    <!-- ======================= STOPKA APLIKACJI ======================= -->
+    <footer class="app-footer">
+        © 2025 Corelay. Wszelkie prawa zastrzeżone.
+    </footer>
+
+    <!-- ======================= KONTENER NA TOASTY ======================= -->
+    <div id="toast-container"></div>
+
+
+    <!-- =================================================================
+     * =================================================================
+     * * SKRYPTY JAVASCRIPT
+     * * =================================================================
+     * ================================================================= -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // ==============================================
+            // 1. SELEKTORY I STAN APLIKACJI
+            // ==============================================
+            
+            let currentUserEmail = '';
+            let allOrders = [];
+            let allPins = {};
+            let availableStores = [];
+
+            // Główne elementy UI
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const emailInput = document.getElementById('userEmail');
+            const saveEmailBtn = document.getElementById('saveEmailBtn');
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const themeIconLight = document.getElementById('theme-icon-light');
+            const themeIconDark = document.getElementById('theme-icon-dark');
+            const tabsContainer = document.querySelector('.tabs-nav');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            // Dashboard
+            const ordersContainer = document.getElementById('ordersContainer');
+            const filterStatus = document.getElementById('filterStatus');
+            const filterStore = document.getElementById('filterStore');
+            const emptyStateDashboard = document.getElementById('empty-state-dashboard');
+
+            // Generowanie PIN
+            const selectOrder = document.getElementById('selectOrder');
+            const generatePinBtn = document.getElementById('generatePinBtn');
+            const pinResultBox = document.getElementById('pinResult');
+            const qrCanvas = document.getElementById('qrCanvas');
+            const pinCodeEl = document.getElementById('pinCode');
+            const validityDisplayEl = document.getElementById('validityDisplay');
+            const expiryDateEl = document.getElementById('expiryDate');
+            const qrDataDisplayEl = document.getElementById('qrDataDisplay');
+            const copyPinBtn = document.getElementById('copyPinBtn');
+            const downloadQrBtn = document.getElementById('downloadQrBtn');
+            const emptyStateGenerate = document.getElementById('empty-state-generate');
+            const generateFormContent = document.getElementById('generate-form-content');
+
+            // Weryfikacja PIN
+            const pinInput = document.getElementById('pinInput');
+            const verifyPinBtn = document.getElementById('verifyPinBtn');
+            
+            // Toast
+            const toastContainer = document.getElementById('toast-container');
+
+            // ==============================================
+            // 2. DANE MOCK (zgodnie z PDF)
+            // ==============================================
+            
+            const mockOrdersData = [
+                {
+                    orderId: 'ORD-1001',
+                    email: 'wojtek@corelay.pl',
+                    store: 'MODIVO',
+                    status: 'READY_FOR_PICKUP',
+                    items: [
+                        { name: 'Niebieski Sweter M', price: 199.99, qty: 1 },
+                        { name: 'Czarne Spodnie L', price: 149.99, qty: 1 }
+                    ],
+                    deadline: '2025-11-20T23:59:59Z',
+                    createdAt: '2025-11-08T10:00:00Z'
+                },
+                {
+                    orderId: 'ORD-1002',
+                    email: 'wojtek@corelay.pl',
+                    store: 'LPP',
+                    status: 'PICKED_UP',
+                    items: [{ name: 'Kurtka Zimowa L', price: 299.00, qty: 1 }],
+                    deadline: '2025-11-15T23:59:59Z',
+                    createdAt: '2025-11-05T14:30:00Z',
+                    pickupTime: '2025-11-10T09:15:00Z'
+                },
+                {
+                    orderId: 'ORD-1003',
+                    email: 'anna@test.pl',
+                    store: 'ZARA',
+                    status: 'READY_FOR_PICKUP',
+                    items: [{ name: 'Sukienka Czarna S', price: 149.50, qty: 1 }],
+                    deadline: '2025-11-25T23:59:59Z',
+                    createdAt: '2025-11-09T16:00:00Z'
+                },
+                {
+                    orderId: 'ORD-1004',
+                    email: 'wojtek@corelay.pl',
+                    store: 'ZARA',
+                    status: 'READY_FOR_PICKUP',
+                    items: [{ name: 'Perfumy 50ml', price: 249.00, qty: 1 }],
+                    deadline: '2025-11-22T23:59:59Z',
+                    createdAt: '2025-11-10T11:00:00Z'
+                },
+                {
+                    orderId: 'ORD-1005',
+                    email: 'piotr@example.com',
+                    store: 'MODIVO',
+                    status: 'READY_FOR_PICKUP',
+                    items: [{ name: 'Buty Sportowe 43', price: 399.99, qty: 1 }],
+                    deadline: '2025-11-23T23:59:59Z',
+                    createdAt: '2025-11-10T12:00:00Z'
+                },
+                {
+                    orderId: 'ORD-1006',
+                    email: 'anna@test.pl',
+                    store: 'LPP',
+                    status: 'PICKED_UP',
+                    items: [{ name: 'T-shirt Biały M', price: 49.99, qty: 3 }],
+                    deadline: '2025-11-18T23:59:59Z',
+                    createdAt: '2025-11-07T08:00:00Z',
+                    pickupTime: '2025-11-09T18:30:00Z'
+                },
+                {
+                    orderId: 'ORD-1007',
+                    email: 'wojtek@corelay.pl',
+                    store: 'LPP',
+                    status: 'READY_FOR_RETURN',
+                    items: [{ name: 'Szalik Wełniany', price: 89.90, qty: 1 }],
+                    deadline: '2025-11-19T23:59:59Z',
+                    createdAt: '2025-11-08T15:00:00Z',
+                },
+                {
+                    orderId: 'ORD-1008',
+                    email: 'piotr@example.com',
+                    store: 'ZARA',
+                    status: 'READY_FOR_PICKUP',
+                    items: [
+                        { name: 'Koszula Błękitna L', price: 179.00, qty: 1 },
+                        { name: 'Krawat Jedwabny', price: 99.00, qty: 1 }
+                    ],
+                    deadline: '2025-11-24T23:59:59Z',
+                    createdAt: '2025-11-10T14:20:00Z'
+                },
+                {
+                    orderId: 'ORD-1009',
+                    email: 'wojtek@corelay.pl',
+                    store: 'MODIVO',
+                    status: 'PICKED_UP',
+                    items: [{ name: 'Pasek Skórzany', price: 119.00, qty: 1 }],
+                    deadline: '2025-11-12T23:59:59Z',
+                    createdAt: '2025-11-04T10:00:00Z',
+                    pickupTime: '2025-11-05T16:45:00Z'
+                },
+                {
+                    orderId: 'ORD-1010',
+                    email: 'anna@test.pl',
+                    store: 'ZARA',
+                    status: 'READY_FOR_PICKUP',
+                    items: [{ name: 'Torebka Skórzana', price: 349.00, qty: 1 }],
+                    deadline: '2025-11-26T23:59:59Z',
+                    createdAt: '2025-11-10T17:00:00Z'
+                }
+            ];
+
+            // ==============================================
+            // 3. FUNKCJE INICJALIZACYJNE
+            // ==============================================
+            
+            /**
+             * Główna funkcja inicjalizująca aplikację.
+             */
+            function initApp() {
+                console.log('Corelay App Init...');
+                loadMockData();
+                loadTheme();
+                loadStateFromStorage();
+                setupEventListeners();
+                updateUI();
+                
+                // Ukryj ekran ładowania z opóźnieniem
+                setTimeout(() => {
+                    loadingOverlay.classList.add('hidden');
+                }, 500);
+            }
+
+            /**
+             * Ładuje dane mock do localStorage, jeśli nie istnieją.
+             */
+            function loadMockData() {
+                if (!localStorage.getItem('corelay_orders')) {
+                    localStorage.setItem('corelay_orders', JSON.stringify(mockOrdersData));
+                    console.log('Mock data loaded to localStorage.');
+                }
+                if (!localStorage.getItem('corelay_pins')) {
+                    localStorage.setItem('corelay_pins', JSON.stringify({}));
+                }
+                
+                // Załaduj dane do stanu aplikacji
+                allOrders = JSON.parse(localStorage.getItem('corelay_orders'));
+                allPins = JSON.parse(localStorage.getItem('corelay_pins'));
+                
+                // Wyodrębnij unikalne sklepy
+                const stores = [...new Set(allOrders.map(o => o.store))];
+                availableStores = stores.sort();
+            }
+
+            /**
+             * Wczytuje preferencje użytkownika (e-mail) z localStorage.
+             */
+            function loadStateFromStorage() {
+                const savedEmail = localStorage.getItem('corelay_user_email') || '';
+                currentUserEmail = savedEmail.toLowerCase();
+                emailInput.value = savedEmail;
+            }
+
+            /**
+             * Ustawia nasłuchiwacze zdarzeń dla elementów UI.
+             */
+            function setupEventListeners() {
+                themeToggleBtn.addEventListener('click', toggleTheme);
+                saveEmailBtn.addEventListener('click', handleSaveEmail);
+                emailInput.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') handleSaveEmail();
+                });
+
+                // Nasłuchiwacze zakładek
+                tabsContainer.addEventListener('click', (e) => {
+                    const tabButton = e.target.closest('.tab-btn');
+                    if (tabButton) {
+                        showTab(tabButton.dataset.tab);
+                    }
+                });
+                
+                // Nasłuchiwacze filtrów
+                filterStatus.addEventListener('change', renderOrders);
+                filterStore.addEventListener('change', renderOrders);
+                
+                // Nasłuchiwacze generowania PIN
+                generatePinBtn.addEventListener('click', generatePIN);
+                copyPinBtn.addEventListener('click', copyPIN);
+                downloadQrBtn.addEventListener('click', downloadQR);
+
+                // Nasłuchiwacze weryfikacji PIN
+                verifyPinBtn.addEventListener('click', verifyPIN);
+                pinInput.addEventListener('input', formatPinInput);
+            }
+
+            // ==============================================
+            // 4. GŁÓWNA LOGIKA (CORE)
+            // ==============================================
+
+            /**
+             * Zapisuje e-mail użytkownika i odświeża UI.
+             */
+            function handleSaveEmail() {
+                const email = emailInput.value.trim().toLowerCase();
+                if (email) {
+                    currentUserEmail = email;
+                    localStorage.setItem('corelay_user_email', email);
+                    showToast('success', `Zalogowano jako ${email}`);
+                    updateUI();
+                } else {
+                    showToast('error', 'Wprowadź poprawny adres e-mail');
+                }
+            }
+
+            /**
+             * Generuje nowy PIN i kod QR dla wybranego zamówienia.
+             */
+            function generatePIN() {
+                const orderId = selectOrder.value;
+                const validityHours = parseInt(document.querySelector('input[name="validity"]:checked').value);
+                
+                if (!orderId) {
+                    showToast('error', 'Wybierz zamówienie!');
+                    return;
+                }
+
+                // Generuj 6-cyfrowy PIN
+                const pin = String(Math.floor(100000 + Math.random() * 900000));
+                
+                // Sprawdź unikalność (mało prawdopodobne, ale dobra praktyka)
+                if (allPins[pin]) {
+                    return generatePIN(); // Rekurencja
+                }
+
+                const now = Date.now();
+                const expiresAt = now + (validityHours * 3600 * 1000);
+                
+                const pinData = {
+                    orderId,
+                    email: currentUserEmail,
+                    expiresAt,
+                    validityHours,
+                    createdAt: now,
+                    used: false
+                };
+                
+                // Zapisz PIN
+                allPins[pin] = pinData;
+                localStorage.setItem('corelay_pins', JSON.stringify(allPins));
+
+                // Generuj QR kod
+                const qrData = `CORELAY-${orderId}-${pin}`;
+                qrCanvas.innerHTML = ''; // Wyczyść poprzedni QR
+                
+                try {
+                    new QRCode(qrCanvas, {
+                        text: qrData,
+                        width: 200,
+                        height: 200,
+                        colorDark: getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim(),
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                } catch (err) {
+                    console.error("Błąd generowania QR:", err);
+                    qrCanvas.innerHTML = "Błąd generowania QR";
+                }
+
+                // Wyświetl wynik
+                pinCodeEl.textContent = pin.match(/.{1,3}/g).join(' '); // Formatuj 123 456
+                validityDisplayEl.textContent = validityHours;
+                expiryDateEl.textContent = formatDateTime(expiresAt);
+                qrDataDisplayEl.textContent = `Dane QR: ${qrData}`;
+                
+                pinResultBox.style.display = 'block';
+                pinResultBox.style.animation = 'slideUp 300ms ease-out';
+                
+                showToast('success', `Wygenerowano PIN: ${pin}`);
+            }
+
+            /**
+             * Weryfikuje wprowadzony PIN.
+             */
+            function verifyPIN() {
+                const pin = pinInput.value.replace(/\s/g, ''); // Usuń spacje
+                
+                if (pin.length !== 6) {
+                    showToast('error', 'PIN musi mieć 6 cyfr!');
+                    shakeElement(pinInput);
+                    return;
+                }
+
+                const pinData = allPins[pin];
+
+                if (!pinData) {
+                    showModal('error', 'PIN Niepoprawny', 'Wprowadzony PIN nie istnieje w naszym systemie. Spróbuj ponownie.');
+                    shakeElement(pinInput);
+                    return;
+                }
+
+                if (pinData.used) {
+                    showModal('error', 'PIN Już Użyty', `Ten PIN został już wykorzystany ${formatDateTime(pinData.usedAt)} do odbioru zamówienia ${pinData.orderId}.`);
+                    shakeElement(pinInput);
+                    return;
+                }
+
+                if (Date.now() > pinData.expiresAt) {
+                    showModal('error', 'PIN Wygasł', `Ten PIN wygasł ${formatDateTime(pinData.expiresAt)}. Wygeneruj nowy kod.`);
+                    shakeElement(pinInput);
+                    return;
+                }
+                
+                // --- SUKCES ---
+                
+                // 1. Zaktualizuj PIN (oznacz jako użyty)
+                pinData.used = true;
+                pinData.usedAt = Date.now();
+                allPins[pin] = pinData;
+                localStorage.setItem('corelay_pins', JSON.stringify(allPins));
+
+                // 2. Zaktualizuj status zamówienia
+                const orderIndex = allOrders.findIndex(o => o.orderId === pinData.orderId);
+                if (orderIndex !== -1) {
+                    allOrders[orderIndex].status = 'PICKED_UP';
+                    allOrders[orderIndex].pickupTime = new Date().toISOString();
+                    localStorage.setItem('corelay_orders', JSON.stringify(allOrders));
+                }
+                
+                // 3. Pokaż modal sukcesu
+                showModal('success', 'Paczka Odebrana!', `
+                    <p>Pomyślnie zweryfikowano odbiór zamówienia:</p>
+                    <h3 class="h3" style="font-family: var(--font-mono); margin-top: var(--space-4);">${pinData.orderId}</h3>
+                    <p class="text-secondary" style="margin-top: var(--space-4);">
+                        Czas odbioru: <strong>${formatDateTime(pinData.usedAt)}</strong>
+                    </p>
+                `);
+
+                // 4. Wyczyść i odśwież UI
+                pinInput.value = '';
+                updateUI();
+            }
+
+            // ==============================================
+            // 5. FUNKCJE RENDERUJĄCE I UI
+            // ==============================================
+
+            /**
+             * Główna funkcja odświeżająca cały interfejs użytkownika.
+             */
+            function updateUI() {
+                renderOrders();
+                populateFilters();
+                populateOrderSelect();
+            }
+
+            /**
+             * Pokazuje wybraną zakładkę i ukrywa resztę.
+             */
+            function showTab(tabId) {
+                // Ukryj wszystkie treści zakładek
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // Deaktywuj wszystkie przyciski zakładek
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // Pokaż wybraną treść
+                const activeContent = document.getElementById(tabId);
+                if (activeContent) {
+                    activeContent.classList.add('active');
+                }
+                
+                // Aktywuj wybrany przycisk
+                const activeButton = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+                if (activeButton) {
+                    activeButton.classList.add('active');
+                }
+                
+                // Jeśli przechodzimy na Dashboard, odśwież zamówienia
+                if(tabId === 'dashboard-view') {
+                    renderOrders();
+                }
+                
+                // Jeśli przechodzimy do Generuj, odśwież listę
+                if(tabId === 'generate-view') {
+                    populateOrderSelect();
+                }
+            }
+
+            /**
+             * Wypełnia listę sklepów w filtrach.
+             */
+            function populateFilters() {
+                filterStore.innerHTML = '<option value="all">Wszystkie</option>'; // Reset
+                availableStores.forEach(store => {
+                    filterStore.innerHTML += `<option value="${store}">${store}</option>`;
+                });
+            }
+
+            /**
+             * Renderuje listę zamówień na podstawie filtrów i e-maila.
+             */
+            function renderOrders() {
+                if (!currentUserEmail) {
+                    ordersContainer.innerHTML = '';
+                    emptyStateDashboard.classList.remove('d-none');
+                    return;
+                }
+
+                // Filtrowanie
+                const status = filterStatus.value;
+                const store = filterStore.value;
+                
+                const filteredOrders = allOrders
+                    .filter(o => o.email.toLowerCase() === currentUserEmail)
+                    .filter(o => status === 'all' || o.status === status)
+                    .filter(o => store === 'all' || o.store === store)
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Najnowsze pierwsze
+
+                if (filteredOrders.length === 0) {
+                    ordersContainer.innerHTML = '';
+                    emptyStateDashboard.classList.remove('d-none');
+                    return;
+                }
+
+                emptyStateDashboard.classList.add('d-none');
+                ordersContainer.innerHTML = filteredOrders.map(order => createOrderCard(order)).join('');
+                
+                // Dodaj listenery do przycisków "Generuj PIN" na kartach
+                document.querySelectorAll('.btn-generate-pin').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const orderId = e.currentTarget.dataset.orderId;
+                        openGeneratePIN(orderId);
+                    });
+                });
+            }
+
+            /**
+             * Tworzy HTML dla pojedynczej karty zamówienia.
+             */
+            function createOrderCard(order) {
+                const total = calculateTotal(order.items);
+                const isReady = order.status === 'READY_FOR_PICKUP';
+                const isPickedUp = order.status === 'PICKED_UP';
+                
+                return `
+                    <div class="card order-card">
+                        <div class="order-card-header">
+                            <div class="order-card-header-top">
+                                <div>
+                                    <h3 class="h3">${order.orderId}</h3>
+                                    <span class="order-card-store">${order.store}</span>
+                                </div>
+                                <span class="badge ${getStatusClass(order.status)}">
+                                    ${getStatusIcon(order.status)}
+                                    ${getStatusText(order.status)}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="order-card-body">
+                            <ul class="order-items-list">
+                                ${order.items.map(item => `
+                                    <li class="order-item">
+                                        <span class="item-name">${item.name} (x${item.qty})</span>
+                                        <span class="item-price">${(item.price * item.qty).toFixed(2)} PLN</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                            
+                            <div class="order-summary">
+                                <div class="summary-row total">
+                                    <span>Suma:</span>
+                                    <span>${total.toFixed(2)} PLN</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="order-card-footer">
+                            <div class="footer-info">
+                                ${isPickedUp ? `
+                                    <div class="info-line text-success">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                        <strong>Odebrano:</strong> ${formatDateTime(order.pickupTime)}
+                                    </div>
+                                ` : `
+                                    <div class="info-line">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                        <strong>Utworzono:</strong> ${formatDateTime(order.createdAt)}
+                                    </div>
+                                    <div class="info-line">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                        <strong>Odbiór do:</strong> ${formatDate(order.deadline)}
+                                    </div>
+                                `}
+                            </div>
+                            ${isReady ? `
+                                <div class="order-card-actions">
+                                    <button class="btn btn-primary btn-generate-pin" data-order-id="${order.orderId}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-key"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                                        Generuj PIN/QR
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            /**
+             * Wypełnia listę <select> zamówieniami gotowymi do odbioru.
+             */
+            function populateOrderSelect() {
+                const readyOrders = allOrders.filter(o => 
+                    o.email.toLowerCase() === currentUserEmail && 
+                    o.status === 'READY_FOR_PICKUP'
+                );
+
+                if (readyOrders.length === 0) {
+                    emptyStateGenerate.classList.remove('d-none');
+                    generateFormContent.classList.add('d-none');
+                    pinResultBox.style.display = 'none';
+                } else {
+                    emptyStateGenerate.classList.add('d-none');
+                    generateFormContent.classList.remove('d-none');
+                    
+                    selectOrder.innerHTML = '<option value="">Wybierz z listy...</option>';
+                    readyOrders.forEach(order => {
+                        const total = calculateTotal(order.items);
+                        selectOrder.innerHTML += `
+                            <option value="${order.orderId}">
+                                ${order.orderId} (${order.store}) - ${total.toFixed(2)} PLN
+                            </option>
+                        `;
+                    });
+                }
+            }
+
+            /**
+             * Przenosi użytkownika do zakładki Generuj i wybiera zamówienie.
+             */
+            function openGeneratePIN(orderId) {
+                showTab('generate-view');
+                selectOrder.value = orderId;
+                // Scroll do góry
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            // ==============================================
+            // 6. OBSŁUGA MOTYWY (Dark/Light Mode)
+            // ==============================================
+
+            /**
+             * Przełącza motyw kolorystyczny.
+             */
+            function toggleTheme() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+                localStorage.setItem('corelay_theme', newTheme);
+            }
+
+            /**
+             * Ustawia motyw na stronie.
+             */
+            function setTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                if (theme === 'dark') {
+                    themeIconLight.classList.add('d-none');
+                    themeIconDark.classList.remove('d-none');
+                } else {
+                    themeIconLight.classList.remove('d-none');
+                    themeIconDark.classList.add('d-none');
+                }
+                // Odśwież QR, jeśli jest widoczny (by zmienić kolor)
+                if (pinResultBox.style.display === 'block') {
+                    generatePIN();
+                }
+            }
+
+            /**
+             * Ładuje zapisany motyw z localStorage.
+             */
+            function loadTheme() {
+                const savedTheme = localStorage.getItem('corelay_theme') || 'light';
+                setTheme(savedTheme);
+            }
+
+            // ==============================================
+            // 7. KOMPONENTY UI (Toast, Modal, Helpers)
+            // ==============================================
+
+            /**
+             * Pokazuje powiadomienie typu "toast".
+             */
+            function showToast(type, message) {
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                
+                const icon = type === 'success' ? 
+                    `<svg class="toast-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>` :
+                    `<svg class="toast-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+
+                toast.innerHTML = `
+                    ${icon}
+                    <span class="toast-message">${message}</span>
+                `;
+
+                toastContainer.appendChild(toast);
+
+                // Animate in
+                setTimeout(() => toast.classList.add('show'), 10);
+
+                // Auto-dismiss
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 400); // Po zakończeniu animacji
+                }, 3000);
+            }
+            
+            /**
+             * Pokazuje modal (okno dialogowe).
+             */
+            function showModal(type, title, content) {
+                closeModal(); // Zamknij istniejące
+
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                
+                const icon = type === 'success' ? 
+                    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>` :
+                    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <button class="btn btn-icon btn-tertiary modal-close-btn" aria-label="Zamknij">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                        <div class="modal-icon ${type}">
+                            ${icon}
+                        </div>
+                        <h2>${title}</h2>
+                        <div class="modal-description">${content}</div>
+                        <div class="modal-actions">
+                            <button class="btn btn-primary modal-ok-btn">OK</button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                document.body.style.overflow = 'hidden'; // Zablokuj scroll
+
+                // Event Listeners
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal || e.target.closest('.modal-close-btn') || e.target.closest('.modal-ok-btn')) {
+                        closeModal();
+                    }
+                });
+                
+                document.addEventListener('keydown', closeOnEscape);
+            }
+
+            /**
+             * Zamyka aktywny modal.
+             */
+            function closeModal() {
+                const modal = document.querySelector('.modal-overlay');
+                if (modal) {
+                    modal.style.animation = 'fadeOut 200ms ease-out';
+                    setTimeout(() => modal.remove(), 200);
+                }
+                document.body.style.overflow = ''; // Odblokuj scroll
+                document.removeEventListener('keydown', closeOnEscape);
+            }
+
+            /**
+             * Funkcja pomocnicza do zamykania modala klawiszem Esc.
+             */
+            function closeOnEscape(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            }
+
+            /**
+             * Animacja "trzęsienia" dla elementu (np. przy błędzie).
+             */
+            function shakeElement(element) {
+                element.classList.add('animate-shake');
+                setTimeout(() => element.classList.remove('animate-shake'), 500);
+            }
+
+            // ==============================================
+            // 8. FUNKCJE POMOCNICZE (Formatowanie, Akcje)
+            // ==============================================
+
+            /**
+             * Kopiuje PIN do schowka.
+             */
+            async function copyPIN() {
+                const pin = pinCodeEl.textContent.replace(/\s/g, ''); // Usuń spacje
+                const btnText = copyPinBtn.querySelector('.btn-text');
+                const originalText = btnText.textContent;
+                
+                try {
+                    await navigator.clipboard.writeText(pin);
+                    btnText.textContent = 'Skopiowano!';
+                    showToast('success', 'PIN skopiowany do schowka!');
+                } catch (err) {
+                    // Fallback dla starszych przeglądarek
+                    try {
+                        const input = document.createElement('input');
+                        input.value = pin;
+                        document.body.appendChild(input);
+                        input.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(input);
+                        btnText.textContent = 'Skopiowano!';
+                        showToast('success', 'PIN skopiowany do schowka!');
+                    } catch (fallbackErr) {
+                        showToast('error', 'Nie udało się skopiować PINu');
+                    }
+                }
+                
+                // Przywróć tekst przycisku
+                setTimeout(() => {
+                    btnText.textContent = originalText;
+                }, 2000);
+            }
+
+            /**
+             * Uruchamia pobieranie kodu QR jako obraz PNG.
+             */
+            function downloadQR() {
+                const canvas = qrCanvas.querySelector('canvas');
+                if (!canvas) {
+                    showToast('error', 'Nie znaleziono kodu QR do pobrania');
+                    return;
+                }
+                
+                const orderId = selectOrder.value;
+                const pin = pinCodeEl.textContent.replace(/\s/g, '');
+                
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Corelay-QR-${orderId}-${pin}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('success', 'Pobieranie kodu QR rozpoczęte!');
+                });
+            }
+
+            /**
+             * Formatuje input PINu, dodając spacje (123 456).
+             */
+            function formatPinInput() {
+                let value = pinInput.value.replace(/\s/g, ''); // Usuń spacje
+                if (value.length > 6) value = value.substring(0, 6);
+                
+                if (value.length > 3) {
+                    pinInput.value = value.substring(0, 3) + ' ' + value.substring(3);
+                } else {
+                    pinInput.value = value;
+                }
+            }
+            
+            // --- Pomocniki statusów i dat ---
+            
+            function getStatusClass(status) {
+                const map = {
+                    'READY_FOR_PICKUP': 'badge-warning',
+                    'PICKED_UP': 'badge-success',
+                    'READY_FOR_RETURN': 'badge-error',
+                    'default': 'badge-info'
+                };
+                return map[status] || map['default'];
+            }
+
+            function getStatusText(status) {
+                const map = {
+                    'READY_FOR_PICKUP': 'Gotowe do odbioru',
+                    'PICKED_UP': 'Odebrano',
+                    'READY_FOR_RETURN': 'Do zwrotu'
+                };
+                return map[status] || status;
+            }
+            
+            function getStatusIcon(status) {
+                const map = {
+                    'READY_FOR_PICKUP': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+                    'PICKED_UP': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+                    'READY_FOR_RETURN': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+                };
+                return map[status] || '';
+            }
+
+            function calculateTotal(items) {
+                return items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            }
+
+            function formatDate(dateStr) {
+                if (!dateStr) return 'N/A';
+                return new Date(dateStr).toLocaleDateString('pl-PL', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            }
+
+            function formatDateTime(dateStr) {
+                if (!dateStr) return 'N/A';
+                return new Date(dateStr).toLocaleString('pl-PL', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            // ==============================================
+            // 10. URUCHOMIENIE APLIKACJI
+            // ==============================================
+            
+            initApp();
+
+        });
+    </script>
+
+</body>
+</html>
